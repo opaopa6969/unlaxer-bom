@@ -4,6 +4,23 @@
 現在値の真実は `pom.xml`、本ファイルは過去全トレインと根拠を持つ（二層管理）。
 新トレインは上に積む。
 
+## [2026.08] - 2026-06-15
+
+> 変更: onigiri-parser 0.8.0 → **0.9.0**（DD-008/009/010 ＋ building-hierarchy 統合 PR-A/B/C ＋ AUTO 既定）。他は据え置き。
+> 目的: vacant-service 等の末端 consumer が BOM 経由で最新 onigiri を取り込めるようにする。
+
+| artifact | groupId | version |
+|----------|---------|---------|
+| unlaxer-common | `org.unlaxer` | 2.8.0 |
+| building-hierarchy | `org.unlaxer` | 0.14.1 |
+| abr-utils | `org.unlaxer.geo` | 0.10.1 |
+| onigiri-parser | `org.unlaxer` | **0.9.0** |
+
+### 検証・経緯
+- onigiri-parser 0.9.0 = develop 2b97795（PR-C / AUTO 含む）。default 292 / with-bh 309 緑・CI 緑で検証。
+- AUTO 既定: building-hierarchy が classpath にあれば建物名 +14pt（HEURISTIC 188 → UNLAXER 251 / 442件）、無ければ従来動作。
+- ⚠️ registry publish（onigiri 0.9.0 / BOM 2026.08 を両 registry へ）は deploy token を持つリリースフロー側で実施。
+
 ## [2026.07] - 2026-06-14
 
 > 変更: abr-utils 0.10.0 → **0.10.1**（ABRUtils#34 バグ1修正 a99b4ed を含む明示版）。他は据え置き。
