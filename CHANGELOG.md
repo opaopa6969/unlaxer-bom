@@ -11,6 +11,10 @@
 > ✅ unlaxer-bom 2026.06 / ✅ building-hierarchy 0.14.1 / ✅ unlaxer-common 2.8.0 /
 > ✅ onigiri-parser 0.8.0 ／ ✅ abr-utils 0.10.0（repo: ABRUtils 由来）
 > ※ common/onigiri は deploy:deploy-file（.m2 由来）で投入。各リポ pom への distributionManagement 恒久化は次回リリース時
+>
+> **両 registry に publish 済み**（opaopa6969 と caulis、train 全 artifact）。
+> caulis の CI/メンバーが opaopa6969 private packages を読めないケースに備えた完全ミラー。
+> opaopa6969 を更新の正とし、caulis は同一版を deploy-file で複製する運用。
 
 
 | artifact | groupId | version |
