@@ -133,10 +133,59 @@ flowchart LR
   role -->|"trust: repo:caulis/vacant-service:*"| ok["ECR login / push 可"]
 ```
 
-- **普段 aws-vault で使う人間用 role は基本流用不可**。trust policy に GitHub OIDC プロバイダ＋
-  `repo:caulis/vacant-service:*` 条件が要る。専用 role を1つ作るのが綺麗。
-- account: `448049809927` / region: `ap-northeast-1` / ECR repo: `grdkyc/app/grid-data-kyc`(+`-debug`)。
-- trust policy / 権限 policy の雛形は本リポジトリの運用メモ（または onigiri#78 スレッド）参照。
+GHA は **GitHub OIDC** で role を assume する。したがって role の **信頼ポリシー（trust policy）に
+GitHub OIDC プロバイダ＋このrepo条件**が入っている必要がある。普段 aws-vault で使っている role は
+**人間用（SSO / assume-role）** で GitHub OIDC を信頼していないのが普通 → そのままでは assume できない。
+
+> **例外**: その role の trust policy に既に `token.actions.githubusercontent.com` ＋
+> `repo:caulis/vacant-service:*` が入っているなら、その ARN をそのまま `AWS_ROLE_ARN` に使ってよい。
+> 入っていなければ下記が必要。**普段の role の trust policy を見れば OIDC 対応済みかすぐ分かる。**
+
+#### 要るもの（AWS account `448049809927` / region `ap-northeast-1`）
+
+1. **GitHub OIDC プロバイダ**が存在すること
+   （`arn:aws:iam::448049809927:oidc-provider/token.actions.githubusercontent.com`）。無ければ作る。
+2. **専用 role を作成**（or 既存 role の trust に追記）。一番きれいなのは「ECR push 専用の最小権限 role」を1個作る。
+
+**trust policy**（この repo の GHA だけが assume 可）:
+```json
+{ "Version": "2012-10-17", "Statement": [{
+  "Effect": "Allow",
+  "Principal": { "Federated": "arn:aws:iam::448049809927:oidc-provider/token.actions.githubusercontent.com" },
+  "Action": "sts:AssumeRoleWithWebIdentity",
+  "Condition": {
+    "StringEquals": { "token.actions.githubusercontent.com:aud": "sts.amazonaws.com" },
+    "StringLike":   { "token.actions.githubusercontent.com:sub": "repo:caulis/vacant-service:*" }
+  }
+}]}
+```
+
+**権限ポリシー**（ECR push に必要なだけ）:
+```json
+{ "Version": "2012-10-17", "Statement": [
+  { "Effect": "Allow", "Action": "ecr:GetAuthorizationToken", "Resource": "*" },
+  { "Effect": "Allow",
+    "Action": [
+      "ecr:BatchCheckLayerAvailability", "ecr:InitiateLayerUpload", "ecr:UploadLayerPart",
+      "ecr:CompleteLayerUpload", "ecr:PutImage", "ecr:BatchGetImage", "ecr:ListImages"
+    ],
+    "Resource": [
+      "arn:aws:ecr:ap-northeast-1:448049809927:repository/grdkyc/app/grid-data-kyc",
+      "arn:aws:ecr:ap-northeast-1:448049809927:repository/grdkyc/app/grid-data-kyc-debug"
+    ] }
+]}
+```
+> `deploy-ecr.yml` の「Compute date-revision tag」ステップが `aws ecr list-images` を使うため
+> `ecr:ListImages` も含めてある。`grid-data-kyc-debug` は debug イメージ用（GHA は通常イメージのみ push、
+> ローカル script は両方 push するので両 repo を許可しておくと両対応）。
+
+3. その role の **ARN を vacant-service の repo variable `AWS_ROLE_ARN`** に設定。
+
+#### まとめ
+- **普段の role は基本流用不可**（trust に GitHub OIDC 条件が要る）。trust に上記条件を追記すれば流用も可。
+- 一番きれいなのは **ECR push 専用の最小権限 role を1個作る**（上の policy そのまま）。
+- repo variable `AWS_ROLE_ARN` ＋ secret `PACKAGES_READ_TOKEN`(PAT) を入れれば、あとは
+  `deploy-ecr.yml` を dispatch するだけ。
 
 ---
 
