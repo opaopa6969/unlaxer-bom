@@ -101,3 +101,32 @@ port 化ではこの継ぎ目を `jaddress-rdb-api` 側の正式な境界に昇�
 
 - rdb 抽象度 = **ports & adapters(本格)** を採用(「同一 rdb のバージョン違い」案は不採用)
 - BOM 構造 = **2層(共通 + 製品)** を採用(単一 BOM 案は不採用)
+
+## 9. CI/CD・GitHub Actions
+
+### 9.1 現状(調査結果 2026-06-15)
+
+| repo | ci | publish | publish 先 | 備考 |
+|------|----|---------|-----------|------|
+| onigiri-parser | ci.yml(auth-free 既定ビルド、DB テストは surefire で除外、with-bh/with-abr は profile 隔離 #77)+ test.yml | publish.yml(`release: published` / 手動) | **GitHub Packages**(PAT `PACKAGES_PUBLISH_TOKEN`、settings.xml に `github-unlaxer-bom` / `github-abrutils`) | `-Pwith-bh,with-abr -DskipTests deploy` |
+| ABRUtils | ci.yml | publish.yml | **Nexus**(`nexus-unlaxer-releases`、`NEXUS_USER`/`NEXUS_TOKEN`) | ← GitHub Packages と不一致 |
+| building-hierarchy | ci.yml のみ | **なし** | ?(onigiri の with-bh 同梱 or 手動) | publish 経路が不明瞭 |
+| unlaxer-bom | **なし** | **なし** | 手動(`mvn -s settings.xml deploy`) | BOM リリースが属人的 |
+| vacant-service | ci.yml | deploy-ecr.yml | AWS ECR | service デプロイ(成果物配布ではない) |
+
+### 9.2 設計上の問題点
+
+1. **publish 先の分裂**: ABRUtils=Nexus、onigiri=GitHub Packages。BOM README が掲げる「単一ホスト方式(unlaxer-bom registry に集約)」に反する。**GitHub Packages に統一すべき**。
+2. **unlaxer-bom / building-hierarchy に publish workflow が無い**: BOM 本体と bh のリリースが手作業・属人的。CI 化が必要。
+3. **auth-free CI の前提が崩れる**: 現在 onigiri-parser の既定ビルドは private registry 不要(#77)。だが rdb-api を **onigiri-parser の必須依存**にすると、既定 CI が registry 認証(read:packages)を要求するようになる。対処案 → (a) rdb-api を Maven Central 公開 / (b) CI に read:packages 付与 / (c) profile 隔離。**要判断**。
+
+### 9.3 新アーキでの CI/CD 方針
+
+- **共通テンプレート**: 各 artifact に `ci.yml`(auth-free な compile/test)+ `publish.yml`(`release: published` → PAT で **GitHub Packages へ deploy、単一ホストに統一**)。
+- **`jaddress-rdb-api`**: leaf(common のみ依存・DB 不要)。ci.yml + publish.yml は最小構成で済む。
+- **`vacant-rdb`**: ci.yml で **PostgreSQL service container** を起動し Flyway/Doma の DB テストを実行 + publish.yml。rdb-api を registry から read。
+- **`unlaxer-bom` / `vacant-bom`**: pom-only。ci.yml(`mvn validate` / effective-pom 検証)+ publish.yml(`release` → `deploy`)を**新設**(Phase 0 で着手)。
+- **onigiri-parser publish.yml**: rdb-api 依存化に伴い settings.xml server に rdb-api registry を追加。port 化後は with-bh/with-abr 同梱ロジックを簡素化できる余地。
+- **リリース協調**: 2層 BOM は「製品リリース = 複数 artifact の release 連動」。publish は GitHub release トリガなので、タグ規約(既存 `v{YYMMDDHHmmss}`)で artifact 群の release をまとめる運用を定義する。
+
+> なお publish はローカル環境ではなく CI(secrets 保持)が実行する設計のため、ローカルに settings.xml / PAT が無くても publish は CI 経由で成立する。

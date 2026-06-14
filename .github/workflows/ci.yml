@@ -1,0 +1,28 @@
+name: CI
+
+# BOM は pom-only。整合性（pom の妥当性 + dependencyManagement の解決可否）を検証する。
+# auth は不要 — validate は private registry に触れない。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Validate BOM pom
+        run: mvn -B -N validate

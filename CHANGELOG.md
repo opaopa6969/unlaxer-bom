@@ -4,6 +4,23 @@
 現在値の真実は `pom.xml`、本ファイルは過去全トレインと根拠を持つ（二層管理）。
 新トレインは上に積む。
 
+## [2026.10] - 2026-06-15
+
+> 変更: unlaxer-bom を **vacant 製品の共通 BOM** として再定義（2層 BOM 化への布石）。検証済み 3rdパーティとして
+> **doma 3.6.0 / flyway 12.1.0** を dependencyManagement に追加（各 rdb 実装・consumer が BOM 経由で版を揃え drift を防ぐ）。
+> `jaddress-rdb-api`（rdb port）の枠を予約（公開は Phase 1）。unlaxer artifact 版は据え置き。
+> 設計: docs/design/vacant-bom-rdb-architecture.md / tracking: opaopa6969/unlaxer-bom#1。
+
+| artifact | groupId | version |
+|----------|---------|---------|
+| unlaxer-common | `org.unlaxer` | 2.8.0 |
+| building-hierarchy | `org.unlaxer` | 0.14.1 |
+| abr-utils | `org.unlaxer.geo` | 0.10.1 |
+| onigiri-parser | `org.unlaxer` | 0.9.1 |
+| doma-core / doma-processor | `org.seasar.doma` | **3.6.0**（新規） |
+| flyway-core / flyway-database-postgresql | `org.flywaydb` | **12.1.0**（新規） |
+
+
 ## [2026.09] - 2026-06-15
 
 > 変更: onigiri-parser 0.9.0 → **0.9.1**（with-bh,with-abr 同梱の完全 jar = ABR+BH 両機能入り）。他据え置き。
