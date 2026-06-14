@@ -25,6 +25,15 @@
         <onigiri-parser.version>0.8.0</onigiri-parser.version>
     </properties>
 
+    <distributionManagement>
+        <!-- 単一ホスト方式: 全 unlaxer artifact をこの registry に集約（GitHub Packages、issue onigiri-parser#78） -->
+        <repository>
+            <id>github-unlaxer</id>
+            <name>GitHub Packages (unlaxer)</name>
+            <url>https://maven.pkg.github.com/opaopa6969/unlaxer-bom</url>
+        </repository>
+    </distributionManagement>
+
     <dependencyManagement>
         <dependencies>
             <!-- 全リポ共通基盤。トレイン内で厳密統一を強制する唯一の artifact（1.1.26/2.8.0 事故の再発防止）。 -->
