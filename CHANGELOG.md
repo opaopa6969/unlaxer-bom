@@ -6,6 +6,11 @@
 
 ## [2026.06] - 2026-06-13
 
+> publish 状況（GitHub Packages, opaopa6969/unlaxer-bom registry）:
+> ✅ unlaxer-bom 2026.06 / ✅ building-hierarchy 0.14.1 / ✅ abr-utils 0.10.0（既存）
+> ⏳ unlaxer-common 2.8.0・onigiri-parser 0.8.0 は未 publish
+
+
 | artifact | groupId | version |
 |----------|---------|---------|
 | unlaxer-common | `org.unlaxer` | 2.8.0 |
