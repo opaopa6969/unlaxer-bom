@@ -4,6 +4,27 @@
 現在値の真実は `pom.xml`、本ファイルは過去全トレインと根拠を持つ（二層管理）。
 新トレインは上に積む。
 
+## [2026.07] - 2026-06-14
+
+> 変更: abr-utils 0.10.0 → **0.10.1**（ABRUtils#34 バグ1修正 a99b4ed を含む明示版）。他は据え置き。
+> publish: opaopa6969（abr-utils は ABRUtils repo registry、他は unlaxer-bom registry）／caulis（全て unlaxer-bom registry）。
+
+| artifact | groupId | version |
+|----------|---------|---------|
+| unlaxer-common | `org.unlaxer` | 2.8.0 |
+| building-hierarchy | `org.unlaxer` | 0.14.1 |
+| abr-utils | `org.unlaxer.geo` | 0.10.1 |
+| onigiri-parser | `org.unlaxer` | 0.8.0 |
+
+### 検証・経緯
+- abr-utils 0.10.1 = develop a99b4ed（#34 バグ1: 既定 codec を loadable に）を 0.10.0 と区別するため明示採番。
+  「同一 0.10.0 に修正前/後が混在」問題を解消
+- バグ2（mmap レイアウト不一致クラッシュ）は ABRUtils#35 で継続。snapshot データ版は v1.1.0-snapshot のまま
+- ⚠️ 消費の注意（opaopa6969）: abr-utils は ABRUtils repo registry に居るため、利用側は
+  `<repository>` を2つ（unlaxer-bom registry ＋ ABRUtils registry）必要。caulis は unlaxer-bom registry 1つで完結
+
+---
+
 ## [2026.06] - 2026-06-13
 
 > publish 状況（GitHub Packages, opaopa6969/unlaxer-bom registry）:
