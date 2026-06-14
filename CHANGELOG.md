@@ -4,6 +4,19 @@
 現在値の真実は `pom.xml`、本ファイルは過去全トレインと根拠を持つ（二層管理）。
 新トレインは上に積む。
 
+## [2026.09] - 2026-06-15
+
+> 変更: onigiri-parser 0.9.0 → **0.9.1**（with-bh,with-abr 同梱の完全 jar = ABR+BH 両機能入り）。他据え置き。
+> 0.9.0 は with-bh のみビルドで ABR クラス欠落だったため差し替え。
+
+| artifact | groupId | version |
+|----------|---------|---------|
+| unlaxer-common | `org.unlaxer` | 2.8.0 |
+| building-hierarchy | `org.unlaxer` | 0.14.1 |
+| abr-utils | `org.unlaxer.geo` | 0.10.1 |
+| onigiri-parser | `org.unlaxer` | **0.9.1** |
+
+
 ## [2026.08] - 2026-06-15
 
 > 変更: onigiri-parser 0.8.0 → **0.9.0**（DD-008/009/010 ＋ building-hierarchy 統合 PR-A/B/C ＋ AUTO 既定）。他は据え置き。
