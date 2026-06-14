@@ -60,3 +60,14 @@ mvn install   # → org.unlaxer:unlaxer-bom:2026.06 が .m2 に入る
 ```
 
 publish の議論は onigiri-parser#78 を参照。
+
+## Publishing（GitHub Packages）
+
+```bash
+# settings.xml（コミットしない）: server id=github-unlaxer / password=${env.GH_PKG_TOKEN}
+GH_PKG_TOKEN=<write:packages トークン> mvn -s /path/to/settings.xml deploy
+```
+
+- リリース版は**同一バージョンの再 deploy 不可**（409 Conflict）。再公開はバージョンを上げる
+- 注意（この環境）: gh v2.4.0 には `gh auth token` が無い。トークンは `~/.config/gh/hosts.yml` の `oauth_token`、
+  またはスコープ `write:packages,read:packages` 付き PAT を使う
