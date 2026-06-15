@@ -1,8 +1,13 @@
 # unlaxer-bom
 
-unlaxer プロジェクト群の **検証済みバージョンセット（Bill of Materials）**。
+vacant 製品群の **共通 BOM（検証済みバージョンセット / Bill of Materials）**。
 各リポは独立 SemVer のまま、**BOM のバージョン（CalVer `YYYY.MM`）だけがリリーストレイン番号**になる
 （Jackson / Spring と同方式）。
+
+> **2層 BOM**: この `unlaxer-bom` は全製品で共有する artifact（common / building-hierarchy / abr-utils /
+> onigiri-parser / 予定: jaddress-rdb-api）と検証済み 3rdパーティ（doma / flyway）を固定する**共通 BOM**。
+> 製品固有の rdb 実装・service は **製品 BOM**（`vacant-bom` 等、共通 BOM を import する）が固定する。
+> 全体設計は [docs/design/vacant-bom-rdb-architecture.md](docs/design/vacant-bom-rdb-architecture.md)。
 
 ## なぜ BOM か
 
@@ -18,7 +23,7 @@ unlaxer プロジェクト群の **検証済みバージョンセット（Bill o
     <dependency>
       <groupId>org.unlaxer</groupId>
       <artifactId>unlaxer-bom</artifactId>
-      <version>2026.06</version>
+      <version>2026.10</version>
       <type>pom</type>
       <scope>import</scope>
     </dependency>
@@ -34,14 +39,17 @@ unlaxer プロジェクト群の **検証済みバージョンセット（Bill o
 </dependencies>
 ```
 
-## 現在のトレイン: `2026.06`
+## 現在のトレイン: `2026.10`
 
 | artifact | groupId | version | 備考 |
 |----------|---------|---------|------|
 | unlaxer-common | `org.unlaxer` | 2.8.0 | 全リポ共通基盤。**トレイン内で厳密統一を強制**する唯一の artifact |
 | building-hierarchy | `org.unlaxer` | 0.14.1 | 住所→建物階層パーサー |
-| abr-utils | `org.unlaxer.geo` | 0.10.0 | ABRUtils（住所検索本体・作法の基準） |
-| onigiri-parser | `org.unlaxer` | 0.8.0 | onigiri 住所パーサー |
+| abr-utils | `org.unlaxer.geo` | 0.10.1 | ABRUtils（住所検索本体・作法の基準） |
+| onigiri-parser | `org.unlaxer` | 0.9.1 | onigiri 住所パーサー |
+| doma-core / doma-processor | `org.seasar.doma` | 3.6.0 | 検証済み 3rdパーティ（SQL/DAO） |
+| flyway-core / flyway-database-postgresql | `org.flywaydb` | 12.1.0 | 検証済み 3rdパーティ（schema migration） |
+| _jaddress-rdb-api_ | `org.unlaxer` | _（Phase 1 で新設予定・予約）_ | rdb port（DAO interface + 永続 domain 型） |
 
 過去トレインと検証エビデンスは **[CHANGELOG.md](CHANGELOG.md)**（現在値はこの pom、履歴と根拠は doc の二層）。
 
