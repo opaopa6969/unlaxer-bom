@@ -4,6 +4,23 @@
 現在値の真実は `pom.xml`、本ファイルは過去全トレインと根拠を持つ（二層管理）。
 新トレインは上に積む。
 
+## [2026.15] - 2026-06-16
+
+> 変更: abr-utils 0.10.3 → **0.10.4**(onigiri-parser 0.9.6 据置)。indexing free-text 救済の高速化。
+> `findCompactTreeCandidatesByFreeText` の「n-gram 空振り時の全件線形スキャン(~620K)」を既定 OFF に
+> (`-Dabr.freeText.fullScanFallback=true` で従来挙動)。batch indexing で JP 失敗行ごとに踏んでいた
+> O(620K) を除去し、n-gram で引ける救済(=doc)は維持。**メソッド署名不変のため onigiri 再ビルド不要**。
+> 検証エビデンス: abr-utils CI deploy 成功 / ローカル test green。他据え置き。
+
+| artifact | groupId | version |
+|----------|---------|---------|
+| unlaxer-common | `org.unlaxer` | 2.8.0 |
+| building-hierarchy | `org.unlaxer` | 0.14.1 |
+| abr-utils | `org.unlaxer.geo` | **0.10.4** |
+| onigiri-parser | `org.unlaxer` | 0.9.6 |
+| doma-core / doma-processor | `org.seasar.doma` | 3.6.0 |
+| flyway-core / flyway-database-postgresql | `org.flywaydb` | 12.1.0 |
+
 ## [2026.14] - 2026-06-15
 
 > 変更: onigiri-parser 0.9.4 → **0.9.6** + abr-utils 0.10.2 → **0.10.3**。indexing 高速化トレイン。
