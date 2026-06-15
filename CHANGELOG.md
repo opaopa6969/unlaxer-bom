@@ -4,6 +4,22 @@
 現在値の真実は `pom.xml`、本ファイルは過去全トレインと根拠を持つ（二層管理）。
 新トレインは上に積む。
 
+## [2026.12] - 2026-06-15
+
+> 変更: onigiri-parser 0.9.2 → **0.9.3**。ABR regulated-index を mmap on-demand decode 化し
+> ABR 有効時の Java heap OOM を解消(heap 数百MB→~10MB級、ABRUtils の mmap 設計を維持)。
+> あわせて with-abr/with-bh profile を廃止し abr/bh を default 同梱化(consumer 影響なし)。他据え置き。
+
+| artifact | groupId | version |
+|----------|---------|---------|
+| unlaxer-common | `org.unlaxer` | 2.8.0 |
+| building-hierarchy | `org.unlaxer` | 0.14.1 |
+| abr-utils | `org.unlaxer.geo` | 0.10.1 |
+| onigiri-parser | `org.unlaxer` | **0.9.3** |
+| doma-core / doma-processor | `org.seasar.doma` | 3.6.0 |
+| flyway-core / flyway-database-postgresql | `org.flywaydb` | 12.1.0 |
+
+
 ## [2026.11] - 2026-06-15
 
 > 変更: onigiri-parser 0.9.1 → **0.9.2**（B2 DebugStatus 分岐マーカー追加 + マーカー改名:
