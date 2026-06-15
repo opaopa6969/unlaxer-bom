@@ -4,6 +4,22 @@
 現在値の真実は `pom.xml`、本ファイルは過去全トレインと根拠を持つ（二層管理）。
 新トレインは上に積む。
 
+## [2026.11] - 2026-06-15
+
+> 変更: onigiri-parser 0.9.1 → **0.9.2**（B2 DebugStatus 分岐マーカー追加 + マーカー改名:
+> 階層オラクル→ABR範囲判定 / Unlaxer→建物階層リゾルバ）。他据え置き。
+> consumer 注意: 旧マーカー名（階層オラクル…）を参照しているコードは新名（ABR範囲判定…）へ追従が必要。
+
+| artifact | groupId | version |
+|----------|---------|---------|
+| unlaxer-common | `org.unlaxer` | 2.8.0 |
+| building-hierarchy | `org.unlaxer` | 0.14.1 |
+| abr-utils | `org.unlaxer.geo` | 0.10.1 |
+| onigiri-parser | `org.unlaxer` | **0.9.2** |
+| doma-core / doma-processor | `org.seasar.doma` | 3.6.0 |
+| flyway-core / flyway-database-postgresql | `org.flywaydb` | 12.1.0 |
+
+
 ## [2026.10] - 2026-06-15
 
 > 変更: unlaxer-bom を **vacant 製品の共通 BOM** として再定義（2層 BOM 化への布石）。検証済み 3rdパーティとして

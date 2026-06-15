@@ -23,7 +23,7 @@ vacant 製品群の **共通 BOM（検証済みバージョンセット / Bill o
     <dependency>
       <groupId>org.unlaxer</groupId>
       <artifactId>unlaxer-bom</artifactId>
-      <version>2026.10</version>
+      <version>2026.11</version>
       <type>pom</type>
       <scope>import</scope>
     </dependency>
@@ -39,14 +39,14 @@ vacant 製品群の **共通 BOM（検証済みバージョンセット / Bill o
 </dependencies>
 ```
 
-## 現在のトレイン: `2026.10`
+## 現在のトレイン: `2026.11`
 
 | artifact | groupId | version | 備考 |
 |----------|---------|---------|------|
 | unlaxer-common | `org.unlaxer` | 2.8.0 | 全リポ共通基盤。**トレイン内で厳密統一を強制**する唯一の artifact |
 | building-hierarchy | `org.unlaxer` | 0.14.1 | 住所→建物階層パーサー |
 | abr-utils | `org.unlaxer.geo` | 0.10.1 | ABRUtils（住所検索本体・作法の基準） |
-| onigiri-parser | `org.unlaxer` | 0.9.1 | onigiri 住所パーサー |
+| onigiri-parser | `org.unlaxer` | 0.9.2 | onigiri 住所パーサー |
 | doma-core / doma-processor | `org.seasar.doma` | 3.6.0 | 検証済み 3rdパーティ（SQL/DAO） |
 | flyway-core / flyway-database-postgresql | `org.flywaydb` | 12.1.0 | 検証済み 3rdパーティ（schema migration） |
 | _jaddress-rdb-api_ | `org.unlaxer` | _（Phase 1 で新設予定・予約）_ | rdb port（DAO interface + 永続 domain 型） |
