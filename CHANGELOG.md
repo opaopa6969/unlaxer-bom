@@ -4,6 +4,22 @@
 現在値の真実は `pom.xml`、本ファイルは過去全トレインと根拠を持つ（二層管理）。
 新トレインは上に積む。
 
+## [2026.17] - 2026-06-16
+
+> 変更: onigiri-parser 0.9.7 → **0.9.8**(abr-utils 0.10.6 / japanese-parser-common 0.1.0 据置)。
+> `AbrFallbackStats.wasLastParseRescued()` を追加 — ABR 救済が実際に doc 化へ寄与した parse を per-thread で
+> 観測可能に(上位 indexing が per-file `abr_fallback_count` に集計するため)。観測のみ・既存挙動不変。
+
+| artifact | groupId | version |
+|----------|---------|---------|
+| unlaxer-common | `org.unlaxer` | 2.8.0 |
+| japanese-parser-common | `org.unlaxer` | 0.1.0 |
+| building-hierarchy | `org.unlaxer` | 0.14.1 |
+| abr-utils | `org.unlaxer.geo` | 0.10.6 |
+| onigiri-parser | `org.unlaxer` | **0.9.8** |
+| doma-core / doma-processor | `org.seasar.doma` | 3.6.0 |
+| flyway-core / flyway-database-postgresql | `org.flywaydb` | 12.1.0 |
+
 ## [2026.16] - 2026-06-16
 
 > 変更: **japanese-parser-common 0.1.0 を新規追加** + onigiri-parser 0.9.6 → **0.9.7** + abr-utils 0.10.4 → **0.10.6**。
