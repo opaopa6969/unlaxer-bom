@@ -4,6 +4,30 @@
 現在値の真実は `pom.xml`、本ファイルは過去全トレインと根拠を持つ（二層管理）。
 新トレインは上に積む。
 
+## [2026.16] - 2026-06-16
+
+> 変更: **japanese-parser-common 0.1.0 を新規追加** + onigiri-parser 0.9.6 → **0.9.7** + abr-utils 0.10.4 → **0.10.6**。
+> - **japanese-parser-common**: onigiri から日本語住所テキスト処理(文字種/CodePoint モデル・正規化・tokenizer・
+>   translator 核・MatchKind enum・カスタム Lucene CharFilter)を抽出した共通モジュール。onigiri / abr-utils が共有。
+>   MatchKind は純 enum 化(ResolverResultValue/Codec は onigiri 残置、sentinel NPE 修正挙動は維持)。
+> - **abr-utils 0.10.6**: 構造化住所 resolver(行政剥がし + 町名最長一致、jageocoder/DAMS 流、decode/全件スキャンなし)
+>   + 列挙/match public API(prefectures/municipalities/oazaList/matchPrefecture/matchMunicipality)。0.10.5 で生辞書
+>   アクセサ公開 + free-text を @Deprecated 化。
+> - **onigiri 0.9.7**: 抽出追従 + ABR 救済(AbrZipResolver)を free-text fuzzy → 構造化 resolveComponents へ rewire
+>   (free-text は最終手段 fallback)。
+> 検証エビデンス: japanese-parser-common 単体 79 tests / onigiri 380 tests / abr-utils 67 tests(構造化 vs free-text
+>   比較含む)全 green。各 artifact publish 成功。
+
+| artifact | groupId | version |
+|----------|---------|---------|
+| unlaxer-common | `org.unlaxer` | 2.8.0 |
+| **japanese-parser-common** | `org.unlaxer` | **0.1.0** |
+| building-hierarchy | `org.unlaxer` | 0.14.1 |
+| abr-utils | `org.unlaxer.geo` | **0.10.6** |
+| onigiri-parser | `org.unlaxer` | **0.9.7** |
+| doma-core / doma-processor | `org.seasar.doma` | 3.6.0 |
+| flyway-core / flyway-database-postgresql | `org.flywaydb` | 12.1.0 |
+
 ## [2026.15] - 2026-06-16
 
 > 変更: abr-utils 0.10.3 → **0.10.4**(onigiri-parser 0.9.6 据置)。indexing free-text 救済の高速化。
