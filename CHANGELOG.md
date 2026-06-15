@@ -4,6 +4,25 @@
 現在値の真実は `pom.xml`、本ファイルは過去全トレインと根拠を持つ（二層管理）。
 新トレインは上に積む。
 
+## [2026.14] - 2026-06-15
+
+> 変更: onigiri-parser 0.9.4 → **0.9.6** + abr-utils 0.10.2 → **0.10.3**。indexing 高速化トレイン。
+> - 0.9.5: `郵便番号辞書match区` の null MatchKind encode NPE 修正。
+> - 0.9.6: ABR hierarchy oracle を**存在辞書(zero-decode mmap, abr-utils 0.10.3 `RegulatedExistenceIndex`)**へ
+>   張り替え(lookup 毎の compact-tree decode + cache を撤去)。`AbrFallbackAddressParser` に free-text fallback
+>   抑止フラグを追加(indexing worker で全件線形スキャンを回避)。Kuromoji `Pronunciation` を ThreadLocal 化
+>   (ファイル内並列化の前提)。
+> 検証エビデンス: onigiri-parser CI(test+build)green(380 tests)/ 両 artifact publish 成功。他据え置き。
+
+| artifact | groupId | version |
+|----------|---------|---------|
+| unlaxer-common | `org.unlaxer` | 2.8.0 |
+| building-hierarchy | `org.unlaxer` | 0.14.1 |
+| abr-utils | `org.unlaxer.geo` | **0.10.3** |
+| onigiri-parser | `org.unlaxer` | **0.9.6** |
+| doma-core / doma-processor | `org.seasar.doma` | 3.6.0 |
+| flyway-core / flyway-database-postgresql | `org.flywaydb` | 12.1.0 |
+
 ## [2026.13] - 2026-06-15
 
 > 変更: onigiri-parser 0.9.3 → **0.9.4** + abr-utils 0.10.1 → **0.10.2**。ABR 有効時の indexing
