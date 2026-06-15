@@ -4,6 +4,23 @@
 現在値の真実は `pom.xml`、本ファイルは過去全トレインと根拠を持つ（二層管理）。
 新トレインは上に積む。
 
+## [2026.13] - 2026-06-15
+
+> 変更: onigiri-parser 0.9.3 → **0.9.4** + abr-utils 0.10.1 → **0.10.2**。ABR 有効時の indexing
+> スループット低下(synchronized LruJsonCache のロック競合 + 二重 Jackson 変換)を解消する option C。
+> abr-utils 0.10.2 に `decodeToJsonNode` / ロックフリー `compactTreeJsonNode(rowId)` を追加し、
+> onigiri 0.9.4 が JsonNode を直接消費(String 再パース廃止)+ ロックフリー bounded cache を併用。
+> 検証エビデンス: onigiri-parser CI(test+build)green / 両 artifact publish 成功。他据え置き。
+
+| artifact | groupId | version |
+|----------|---------|---------|
+| unlaxer-common | `org.unlaxer` | 2.8.0 |
+| building-hierarchy | `org.unlaxer` | 0.14.1 |
+| abr-utils | `org.unlaxer.geo` | **0.10.2** |
+| onigiri-parser | `org.unlaxer` | **0.9.4** |
+| doma-core / doma-processor | `org.seasar.doma` | 3.6.0 |
+| flyway-core / flyway-database-postgresql | `org.flywaydb` | 12.1.0 |
+
 ## [2026.12] - 2026-06-15
 
 > 変更: onigiri-parser 0.9.2 → **0.9.3**。ABR regulated-index を mmap on-demand decode 化し
