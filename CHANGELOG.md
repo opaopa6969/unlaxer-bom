@@ -4,6 +4,23 @@
 現在値の真実は `pom.xml`、本ファイルは過去全トレインと根拠を持つ（二層管理）。
 新トレインは上に積む。
 
+## [2026.19] - 2026-06-16
+
+> 変更: abr-utils 0.10.7 → **0.10.8**(他据置)。0.10.7 の存在辞書 地番 union を **revert**。
+> union は件数・救済 churn に無効果な一方、飛び番の地番を go-set に混ぜて辞書を肥大化させ
+> 起動 build と parse を遅くしていた(地番多発エリアで約2倍)。RESIDENTIAL 優先の元挙動に戻す。
+> 地番の枝番誤降格対策は「地番住所では範囲判定を効かせない」方向で別途。
+
+| artifact | groupId | version |
+|----------|---------|---------|
+| unlaxer-common | `org.unlaxer` | 2.8.0 |
+| japanese-parser-common | `org.unlaxer` | 0.1.0 |
+| building-hierarchy | `org.unlaxer` | 0.14.1 |
+| abr-utils | `org.unlaxer.geo` | **0.10.8** |
+| onigiri-parser | `org.unlaxer` | 0.9.8 |
+| doma-core / doma-processor | `org.seasar.doma` | 3.6.0 |
+| flyway-core / flyway-database-postgresql | `org.flywaydb` | 12.1.0 |
+
 ## [2026.18] - 2026-06-16
 
 > 変更: abr-utils 0.10.6 → **0.10.7**(onigiri 0.9.8 / jpc 0.1.0 据置)。存在辞書の地番取りこぼし regression 修正。
