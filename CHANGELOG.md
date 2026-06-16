@@ -4,6 +4,23 @@
 現在値の真実は `pom.xml`、本ファイルは過去全トレインと根拠を持つ（二層管理）。
 新トレインは上に積む。
 
+## [2026.18] - 2026-06-16
+
+> 変更: abr-utils 0.10.6 → **0.10.7**(onigiri 0.9.8 / jpc 0.1.0 据置)。存在辞書の地番取りこぼし regression 修正。
+> `findChomesNode` が RESIDENTIAL/LOT_NUMBER の先勝ちで、両体系を持つ行で地番(LOT_NUMBER)を捨てていた。
+> 両 notation を **union** で index するよう修正(hasChome/hasGoLayer/hasGo がどちらかにあれば true)。
+> → 町域範囲判定が地番を部屋番号へ誤降格する不具合を解消(照合品質向上)。dual-notation パリティテスト追加。
+
+| artifact | groupId | version |
+|----------|---------|---------|
+| unlaxer-common | `org.unlaxer` | 2.8.0 |
+| japanese-parser-common | `org.unlaxer` | 0.1.0 |
+| building-hierarchy | `org.unlaxer` | 0.14.1 |
+| abr-utils | `org.unlaxer.geo` | **0.10.7** |
+| onigiri-parser | `org.unlaxer` | 0.9.8 |
+| doma-core / doma-processor | `org.seasar.doma` | 3.6.0 |
+| flyway-core / flyway-database-postgresql | `org.flywaydb` | 12.1.0 |
+
 ## [2026.17] - 2026-06-16
 
 > 変更: onigiri-parser 0.9.7 → **0.9.8**(abr-utils 0.10.6 / japanese-parser-common 0.1.0 据置)。
