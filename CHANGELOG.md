@@ -4,6 +4,24 @@
 現在値の真実は `pom.xml`、本ファイルは過去全トレインと根拠を持つ（二層管理）。
 新トレインは上に積む。
 
+## [2026.20] - 2026-06-16
+
+> 変更: onigiri-parser 0.9.8 → **0.9.9**(他据置)。番地ブロック内の空白を詰める
+> `BlockSpaceNormalizer` を parse 入口(parseOverAll)に追加。「○○1丁目 53-15」のように
+> 丁目と番地の間に半角/全角スペースが入ると、スペースが文字種境界で block を分断し
+> 番地-号が建物階層へ誤配置されていた不具合を解消(後ろが数字の空白のみ詰め、建物名前の
+> 空白は残す)。base / AbrFallback(indexer)両 parser で有効。
+
+| artifact | groupId | version |
+|----------|---------|---------|
+| unlaxer-common | `org.unlaxer` | 2.8.0 |
+| japanese-parser-common | `org.unlaxer` | 0.1.0 |
+| building-hierarchy | `org.unlaxer` | 0.14.1 |
+| abr-utils | `org.unlaxer.geo` | 0.10.8 |
+| onigiri-parser | `org.unlaxer` | **0.9.9** |
+| doma-core / doma-processor | `org.seasar.doma` | 3.6.0 |
+| flyway-core / flyway-database-postgresql | `org.flywaydb` | 12.1.0 |
+
 ## [2026.19] - 2026-06-16
 
 > 変更: abr-utils 0.10.7 → **0.10.8**(他据置)。0.10.7 の存在辞書 地番 union を **revert**。
