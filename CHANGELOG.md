@@ -4,6 +4,28 @@
 現在値の真実は `pom.xml`、本ファイルは過去全トレインと根拠を持つ（二層管理）。
 新トレインは上に積む。
 
+## [2026.21] - 2026-06-16
+
+> 変更: onigiri-parser 0.9.9 → **0.9.11** / japanese-parser-common 0.1.0 → **0.1.1**、
+> **historical-town-names 0.1.0 / municipality-history 1.0.1 を新規追加**。
+> (1) 0.9.10: hierarchyOracle を町域範囲判定(TownRangeCheck)にリネーム(旧プロパティキー後方互換)、
+> BlockSpaceNormalizer を CharacterKind ベースに書き直し(正規表現排除)。
+> (2) 0.9.11: 町名照合に失敗した字を歴史地名辞書(historical-town-names)で町域として消費する
+> 最終 fallback を追加(ABR/JP/字プレフィックス全失敗時のみ・住所向け最長一致・建物 suffix 除外)。
+> jpc 0.1.1: delimitorSpace に各種空白(タブ/ノーブレーク/Unicode スペース)を追加。
+
+| artifact | groupId | version |
+|----------|---------|---------|
+| unlaxer-common | `org.unlaxer` | 2.8.0 |
+| japanese-parser-common | `org.unlaxer` | **0.1.1** |
+| building-hierarchy | `org.unlaxer` | 0.14.1 |
+| abr-utils | `org.unlaxer.geo` | 0.10.8 |
+| onigiri-parser | `org.unlaxer` | **0.9.11** |
+| historical-town-names | `org.unlaxer` | **0.1.0**(新規) |
+| municipality-history | `org.unlaxer` | **1.0.1**(新規) |
+| doma-core / doma-processor | `org.seasar.doma` | 3.6.0 |
+| flyway-core / flyway-database-postgresql | `org.flywaydb` | 12.1.0 |
+
 ## [2026.20] - 2026-06-16
 
 > 変更: onigiri-parser 0.9.8 → **0.9.9**(他据置)。番地ブロック内の空白を詰める
