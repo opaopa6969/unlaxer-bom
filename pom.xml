@@ -9,7 +9,7 @@
     <!-- リリーストレイン番号（CalVer YYYY.MM）。各 artifact は独立 SemVer のまま。
          このトレインに含まれる「検証済みの組み合わせ」を dependencyManagement で固定する。
          履歴と検証エビデンスは CHANGELOG.md（現在値はこの pom、過去と根拠は doc の二層）。 -->
-    <version>2026.25</version>
+    <version>2026.26</version>
     <packaging>pom</packaging>
 
     <name>unlaxer-bom</name>
@@ -23,7 +23,7 @@
         <!-- このトレインの構成バージョン。CHANGELOG.md の同名トレインと一致させること。 -->
         <unlaxer-common.version>2.8.0</unlaxer-common.version>
         <japanese-parser-common.version>0.1.1</japanese-parser-common.version>
-        <building-hierarchy.version>0.14.1</building-hierarchy.version>
+        <building-hierarchy.version>0.15.0</building-hierarchy.version>
         <abr-utils.version>0.10.9</abr-utils.version>
         <onigiri-parser.version>0.9.14</onigiri-parser.version>
         <!-- 歴史地名辞書(町名照合失敗時の字消費 fallback)とその依存(自治体統廃合履歴)。onigiri 0.9.11 が利用。 -->

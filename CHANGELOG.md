@@ -4,6 +4,26 @@
 現在値の真実は `pom.xml`、本ファイルは過去全トレインと根拠を持つ（二層管理）。
 新トレインは上に積む。
 
+## [2026.26] - 2026-06-25
+
+> 変更: building-hierarchy 0.14.1 → **0.15.0**（教師あり同定 `learned` 戦略を追加 / building-hierarchy#38）。
+> 既定の同定戦略は `normalized` のまま。`learned` は包含・対立度・3値化・部屋証拠の特徴量で
+> 建物名の表記ゆれ併合(recall)と共通種別語の衝突分離を改善（ペア F1 0.750→0.917 / site 建物数 MAE 0.200→0.000）。
+> building-hierarchy 249 テスト緑。他 artifact は変更なし。リリース連鎖: building-hierarchy#39。
+> (注) CHANGELOG は 2026.22〜2026.25 のエントリが未記載。各バージョンの真実は `pom.xml` を参照。
+
+| artifact | groupId | version |
+|----------|---------|---------|
+| unlaxer-common | `org.unlaxer` | 2.8.0 |
+| japanese-parser-common | `org.unlaxer` | 0.1.1 |
+| building-hierarchy | `org.unlaxer` | **0.15.0** |
+| abr-utils | `org.unlaxer.geo` | 0.10.9 |
+| onigiri-parser | `org.unlaxer` | 0.9.14 |
+| historical-town-names | `org.unlaxer` | 0.1.0 |
+| municipality-history | `org.unlaxer` | 1.0.1 |
+| doma-core / doma-processor | `org.seasar.doma` | 3.6.0 |
+| flyway-core / flyway-database-postgresql | `org.flywaydb` | 12.1.0 |
+
 ## [2026.21] - 2026-06-16
 
 > 変更: onigiri-parser 0.9.9 → **0.9.11** / japanese-parser-common 0.1.0 → **0.1.1**、
