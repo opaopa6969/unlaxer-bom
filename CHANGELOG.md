@@ -4,6 +4,24 @@
 現在値の真実は `pom.xml`、本ファイルは過去全トレインと根拠を持つ（二層管理）。
 新トレインは上に積む。
 
+## [2026.27] - 2026-06-25
+
+> 変更: abr-utils 0.10.9 → **0.10.10**（area-key sidecar で lg_code を、dates sidecar で efct/ablt を
+> snapshot から引けるように / ABRUtils#18・#38。develop の structured resolver / 存在索引 compact-v2 は維持）。
+> 他 artifact は 2026.26 から変更なし。abr-historical(sibling)は未publishのため BOM 未登録。
+
+| artifact | groupId | version |
+|----------|---------|---------|
+| unlaxer-common | `org.unlaxer` | 2.8.0 |
+| japanese-parser-common | `org.unlaxer` | 0.1.1 |
+| building-hierarchy | `org.unlaxer` | 0.15.0 |
+| abr-utils | `org.unlaxer.geo` | **0.10.10** |
+| onigiri-parser | `org.unlaxer` | 0.9.14 |
+| historical-town-names | `org.unlaxer` | 0.1.0 |
+| municipality-history | `org.unlaxer` | 1.0.1 |
+| doma-core / doma-processor | `org.seasar.doma` | 3.6.0 |
+| flyway-core / flyway-database-postgresql | `org.flywaydb` | 12.1.0 |
+
 ## [2026.26] - 2026-06-25
 
 > 変更: building-hierarchy 0.14.1 → **0.15.0**（教師あり同定 `learned` 戦略を追加 / building-hierarchy#38）。
