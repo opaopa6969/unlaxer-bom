@@ -4,6 +4,26 @@
 現在値の真実は `pom.xml`、本ファイルは過去全トレインと根拠を持つ（二層管理）。
 新トレインは上に積む。
 
+## [2026.28] - 2026-07-08
+
+> 変更: japanese-parser-common 0.1.1 → **0.3.2**(CharType enum 追加 = 文字種の排他9分類を型に昇格、
+> kindsOf range種別修正、kugiri由来 aza パッケージ等 0.2〜0.3系の取り込み。設計原則「enum化できるものは
+> enum化する(type safe)」)。追随して onigiri-parser 0.9.14 → **0.9.15**、abr-utils 0.10.10 → **0.10.11**
+> (いずれも jpc 0.3.2 でコンパイル・テスト検証済み。onigiri の既存失敗6件は 0.1.1 でも同一に失敗する
+> 環境依存でありトレイン起因の退行なし)。素性キー等の文字列表現は CharType.name() で不変。
+
+| artifact | groupId | version |
+|----------|---------|---------|
+| unlaxer-common | `org.unlaxer` | 2.8.0 |
+| japanese-parser-common | `org.unlaxer` | **0.3.2** |
+| building-hierarchy | `org.unlaxer` | 0.15.0 |
+| abr-utils | `org.unlaxer.geo` | **0.10.11** |
+| onigiri-parser | `org.unlaxer` | **0.9.15** |
+| historical-town-names | `org.unlaxer` | 0.1.0 |
+| municipality-history | `org.unlaxer` | 1.0.1 |
+
+検証: jpc 94 / kugiri 38 / abr-utils 76 全パス、onigiri 333中327パス(既存環境依存6のみ)。
+
 ## [2026.27] - 2026-06-25
 
 > 変更: abr-utils 0.10.9 → **0.10.10**（area-key sidecar で lg_code を、dates sidecar で efct/ablt を
