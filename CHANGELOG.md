@@ -4,6 +4,31 @@
 現在値の真実は `pom.xml`、本ファイルは過去全トレインと根拠を持つ（二層管理）。
 新トレインは上に積む。
 
+## [2026.30] - 2026-07-20
+
+> 変更: building-hierarchy 0.16.0 → **0.17.0**（様方バグ修正 #40 / TailSignals の実算出 /
+> publish ワークフロー追加）。他 artifact は 2026.29 から変更なし。
+>
+> **バグ修正**: `様方` の直前の氏名が残り部屋番号抽出が失敗していた。
+> `恵比寿ビル402号室 山田様方` が建物名 `恵比寿ビル402号室 山田` になっていた。
+> 実データの「様方」はほぼ確実に氏名を伴うため、実質「様方」付き住所が全滅していた。
+> **建物名の名寄せキーが変わる**ので、既存の名寄せ結果を持つ側は再計算が要る。
+>
+> 追加: `TailSignals`（分解結果から観測事実を立て候補列を返す）。
+> サフィックス明示時は候補 1 つ、分解できなくても建物名が数字で終われば候補を返す（`森ビル13`）。
+
+| artifact | groupId | version |
+|----------|---------|---------|
+| unlaxer-common | `org.unlaxer` | 2.8.0 |
+| japanese-parser-common | `org.unlaxer` | 0.3.2 |
+| building-hierarchy | `org.unlaxer` | **0.17.0** |
+| abr-utils | `org.unlaxer.geo` | 0.10.11 |
+| onigiri-parser | `org.unlaxer` | 0.9.15 |
+| historical-town-names | `org.unlaxer` | 0.1.0 |
+| municipality-history | `org.unlaxer` | 1.0.1 |
+
+検証: building-hierarchy 305 件全パス。
+
 ## [2026.29] - 2026-07-20
 
 > 変更: building-hierarchy 0.15.0 → **0.16.0**（裸の漢数字を部屋番号に分解 / onigiri-parser#96）。
