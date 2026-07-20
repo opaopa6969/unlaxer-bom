@@ -4,6 +4,37 @@
 現在値の真実は `pom.xml`、本ファイルは過去全トレインと根拠を持つ（二層管理）。
 新トレインは上に積む。
 
+## [2026.29] - 2026-07-20
+
+> 変更: building-hierarchy 0.15.0 → **0.16.0**（裸の漢数字を部屋番号に分解 / onigiri-parser#96）。
+> 他 artifact は 2026.28 から変更なし。
+>
+> `…ビル四百二` が部屋番号に分解されず建物名に残っていた。`四百二号`（号付き）や `402`（算用数字）は
+> 分解できるのに裸の漢数字だけが落ちる非対称があった。
+>
+> **後方互換に注意**: 分解の確信度が変わる。`RoomNumberBasis`（判定根拠）を導入し、
+> `…ビル402` の確信度が 1.00 → **0.80** に下がる。号室サフィックスが無い以上これも推測であり、
+> 従来満点で返していたのが不正確だったため（精度を上げたのではなく正直になった変更）。
+> 確信度を消費している側は閾値の見直しが要る。`BuildingTailParser.parse()` の
+> シグネチャは互換維持で、根拠が要る呼び出し側は `parseDetailed()` を使う。
+>
+> 裸漢数字の誤検出ガードとして「千」「万」を含む run を不採用にしている
+> （`ハイツ八千代`=8000・`コーポ千代田`=1000 が部屋番号として妥当な範囲に見え、地名・人名に頻出するため）。
+> あわせて `TailInterpretation` / `TailSignal` / `TailCandidate`（末尾裸数字の複数候補＋スコア根拠）を追加。
+> `森ビル13` のように数字まで含めて建物名のケースがあり、文字列だけでは解釈が決まらないため。
+
+| artifact | groupId | version |
+|----------|---------|---------|
+| unlaxer-common | `org.unlaxer` | 2.8.0 |
+| japanese-parser-common | `org.unlaxer` | 0.3.2 |
+| building-hierarchy | `org.unlaxer` | **0.16.0** |
+| abr-utils | `org.unlaxer.geo` | 0.10.11 |
+| onigiri-parser | `org.unlaxer` | 0.9.15 |
+| historical-town-names | `org.unlaxer` | 0.1.0 |
+| municipality-history | `org.unlaxer` | 1.0.1 |
+
+検証: building-hierarchy 283 件全パス。adoyose engine 71 件全パス（0.15.0 参照時）。
+
 ## [2026.28] - 2026-07-08
 
 > 変更: japanese-parser-common 0.1.1 → **0.3.2**(CharType enum 追加 = 文字種の排他9分類を型に昇格、
