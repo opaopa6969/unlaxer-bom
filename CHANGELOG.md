@@ -4,6 +4,22 @@
 現在値の真実は `pom.xml`、本ファイルは過去全トレインと根拠を持つ（二層管理）。
 新トレインは上に積む。
 
+## [2026.33] - 2026-07-26
+
+> 変更: onigiri-parser 0.9.16 → **0.9.17**（建物名パターンの DebugStatus タグ化）、
+> building-hierarchy 0.18.0 → **0.19.0**（BuildingPatternScorer / ForwardTailParser /
+> DuelArbiter — 両方向スキャナと調停）。
+>
+> **追加挙動**: with-bh 構成では建物名の判定根拠（接頭語+固有名詞+接尾語 のパターン種別）が
+> DebugStatus の boolean タグ（建物名パターンXXX）として記録される。enum は末尾追加で
+> 既存 ordinal 不変（ResolverResultKindOfBooleanOrdinalPinTest で固定）。
+> BH の DuelArbiter.arbitrateDetailed は tail/forward 両方向の分解と選択規則を返す
+> （エンジンの building.scanners JSON の素材）。
+>
+> **検証エビデンス**: onigiri 336 run / 既存 baseline 6 failures のみ（変更前後で同一）。
+> BH gold 95 件: duel-arbiter 建物名 96.6%・部屋 100%。BH 実住所 20 万行の
+> 両方向比較は building-hierarchy docs/scanner-duel-experiment.md。
+
 ## [2026.32] - 2026-07-26
 
 > 変更: onigiri-parser 0.9.15 → **0.9.16**（`ZipAddress#町名省略可`）。
