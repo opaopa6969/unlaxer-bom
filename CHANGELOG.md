@@ -4,6 +4,24 @@
 現在値の真実は `pom.xml`、本ファイルは過去全トレインと根拠を持つ（二層管理）。
 新トレインは上に積む。
 
+## [2026.34] - 2026-08-03
+
+> 変更: building-hierarchy 0.19.0 → **0.19.1**（stripHonorific の建物語彙ゲート —
+> 「<宛名>様方」の宛名を建物名として返さない。adoyose#32）、
+> abr-utils 0.10.11 → **0.10.12**（EmbeddedPostcode: 〒前置郵便番号の分離 #48 /
+> (丁目)/(番地) 分割町域の裸ハイフン3連鎖で丁目側 zip を primary に adoyose#34 /
+> ChomeTownExporter: ABR 丁目持ち町字リスト 22,684 町字の生成）。
+>
+> **追加挙動**: postcode-resolve が 〒NNN-NNNN 前置入力を受理し embeddedZip /
+> embeddedZipAgrees を表出。building-hierarchy 経由の建物名ヒントが宛名（田中様方）を
+> 返さなくなり、onigiri パイプラインで方書きが 1400 に正しく載る。
+>
+> **検証エビデンス**: abr-utils 150 テスト green + 1M 計測（候補 99.96% / primary 99.80%、
+> v14 と失敗集合 diff ゼロ）。building-hierarchy 313 テスト green。
+> adoyose engine（bom 2026.34 + 同梱 abr-chome-towns.tsv）89 spec green、
+> 正規化ペアベンチ 2,981 件で正例一致 100.00% / 誤マージ 0.00%
+> （ABRUtils docs/llm-parser-bench-20260801.md）。
+
 ## [2026.33] - 2026-07-26
 
 > 変更: onigiri-parser 0.9.16 → **0.9.17**（建物名パターンの DebugStatus タグ化）、
