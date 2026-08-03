@@ -4,6 +4,19 @@
 現在値の真実は `pom.xml`、本ファイルは過去全トレインと根拠を持つ（二層管理）。
 新トレインは上に積む。
 
+## [2026.36] - 2026-08-03
+
+> 変更: japanese-parser-common 0.3.2 → **0.3.3**（外字カナ別名 7 対 — ABRUtils#53 の
+> KEN_ALL×ABR 機械収穫分: 𣇃谷・柿𥔎・大埇・橳島・秈荷山・鵢崎・ス丶ハキ。
+> あわせて caulis 系 0.3.2（CharType）と opaopa6969 系の履歴乖離をマージで解消）。
+>
+> **追加挙動**: VariantNormalizer の normalizeForAddress 系で上記 7 対の原字/かな書きが
+> 同一キーへ畳まれる（辞書は両側同一正規化なので再構築不要）。API 変更なし。
+>
+> **検証エビデンス**: jpc 98 テスト green。abr-utils FoldCollisionExporter 再実行で
+> KEN_ALL 衝突 5 件のまま増加なし + 1M 計測 99.96/99.80 維持 + ペアベンチ 2,981 満点維持
+> （本トレイン確定時に確認）。
+
 ## [2026.35] - 2026-08-03
 
 > 変更: onigiri-parser 0.9.17 → **0.9.18**（登記字名辞書 registry-aza-names #99 —
