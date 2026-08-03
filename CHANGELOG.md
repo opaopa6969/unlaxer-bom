@@ -497,3 +497,7 @@
 - いずれの artifact も Maven Central 未公開。ローカル `mvn install` 前提
   （building-hierarchy は `mvn install -DskipTests -Dgpg.skip=true`）
 - abr-utils の groupId は `org.unlaxer.geo`（他は `org.unlaxer`）
+
+## 2026.37 (2026-08-04)
+- onigiri-parser 0.9.18 → 0.9.19: 裸「NN−MM」の棟/階/建物名判定（#102/#104 — 公営住宅語彙・
+  room_floor_mismatch・階数上限>60 の減点シグナル。矛盾率 79.6%→31.4%、整合維持 99.9%）
