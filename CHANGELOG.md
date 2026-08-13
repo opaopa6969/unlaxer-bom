@@ -4,6 +4,39 @@
 現在値の真実は `pom.xml`、本ファイルは過去全トレインと根拠を持つ（二層管理）。
 新トレインは上に積む。
 
+## [2026.48] - 2026-08-13
+
+> 変更: **unlaxer-common 2.8.0 → 3.0.11**（他は 2026.47 のまま）。**座標衝突の解消**であって挙動変更ではない。
+>
+> **2.8.0 は GitHub Packages と Maven Central の両方に、同じ座標で中身違いで存在していた**:
+>
+> | | CodePointIndex.of / ZERO | 備考 |
+> |---|---|---|
+> | GH Packages の 2.8.0 | **あり** | ローカル開発・prod イメージはこれを使っていた |
+> | Maven Central の 2.8.0 | **無し**（495,870 bytes） | `javap` で確認 |
+>
+> このため **japanese-parser-common の CI が opaopa6969 / caulis の両方で落ちていた**
+> （read:packages の secret が無く GH から 1 件も取れず、全部 central にフォールバックして
+> 古い方の 2.8.0 を掴み `DelimitorHyphenDictionary` が cannot find symbol）。
+>
+> 3.0.11 は **Maven Central 公式**にあり、該当メソッドを持つ。GH Packages の「2.8.0」を
+> クラス単位で 3.0.11 と比較すると、**住所スタックが使う値クラス（CodePointIndex / Range /
+> IntegerValue 等）は完全に同一**で、差分は parser combinator 側の 16 クラス + 追加 3 クラス
+> （`org.unlaxer.parser.*` / `context.PackratMemoTable`）だけだった。
+> つまり GH の「2.8.0」は実質 3.0.x 系のビルドで、**座標だけが古かった**。
+>
+> **検証エビデンス**:
+> - 品質ゲート（engine jar を 2026.47 と 2026.48 で作って 125 万行）: **G4 全件 diff 変化 0 行**・
+>   **G5 自己 diff 0 行**・G2 矛盾率 4.434% → 4.434%（分母 8,458 で不変）・整合維持 100.0000%・
+>   コア二重解釈 0 件 = **挙動は完全に不変**。G1/G3 は環境未整備で未測定。
+> - テスト: japanese-parser-common 123 件 / onigiri-parser 425 件 / building-hierarchy 312 件 /
+>   vacant-service 294 件、いずれも Failures 0・Errors 0。
+> - **GitHub Packages の認証を与えない**設定 + 空のローカルリポジトリで jpc を clean test しても green
+>   （central から 3.0.11 を解決）= **secret 未設定の CI でも通る**ことを実測。
+>
+> 各 repo の直接 pin も 3.0.11 に揃えた（jpc / onigiri-parser / building-hierarchy）。
+> vacant-service は直接 pin を外して BOM 管理に寄せた。
+
 ## [2026.47] - 2026-08-13
 
 > 変更: **onigiri-parser 0.9.28 → 0.9.29**（他は 2026.46 のまま）。
