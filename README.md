@@ -23,7 +23,7 @@ vacant 製品群の **共通 BOM（検証済みバージョンセット / Bill o
     <dependency>
       <groupId>org.unlaxer</groupId>
       <artifactId>unlaxer-bom</artifactId>
-      <version>2026.12</version>
+      <version>2026.49</version>
       <type>pom</type>
       <scope>import</scope>
     </dependency>
@@ -39,19 +39,22 @@ vacant 製品群の **共通 BOM（検証済みバージョンセット / Bill o
 </dependencies>
 ```
 
-## 現在のトレイン: `2026.12`
+## 現在のトレイン: `2026.49`
 
 | artifact | groupId | version | 備考 |
 |----------|---------|---------|------|
-| unlaxer-common | `org.unlaxer` | 2.8.0 | 全リポ共通基盤。**トレイン内で厳密統一を強制**する唯一の artifact |
-| building-hierarchy | `org.unlaxer` | 0.14.1 | 住所→建物階層パーサー |
-| abr-utils | `org.unlaxer.geo` | 0.10.1 | ABRUtils（住所検索本体・作法の基準） |
-| onigiri-parser | `org.unlaxer` | 0.9.3 | onigiri 住所パーサー |
+| unlaxer-common | `org.unlaxer` | 3.0.11 | 全リポ共通基盤。**トレイン内で厳密統一を強制**する唯一の artifact |
+| japanese-parser-common | `org.unlaxer` | 0.3.6 | 日本語住所テキスト処理共通（文字種/CodePoint モデル・正規化・tokenizer・translator 核）。onigiri / abr-utils が共有 |
+| building-hierarchy | `org.unlaxer` | 0.19.4 | 住所→建物階層パーサー |
+| abr-utils | `org.unlaxer.geo` | 0.10.12 | ABRUtils（住所検索本体・作法の基準） |
+| onigiri-parser | `org.unlaxer` | 0.9.30 | onigiri 住所パーサー |
+| historical-town-names | `org.unlaxer` | 0.1.0 | 歴史地名辞書（町名照合失敗時の字消費 fallback。onigiri 0.9.11 が利用） |
+| municipality-history | `org.unlaxer` | 1.0.2 | 自治体統廃合履歴（historical-town-names の依存） |
 | doma-core / doma-processor | `org.seasar.doma` | 3.6.0 | 検証済み 3rdパーティ（SQL/DAO） |
 | flyway-core / flyway-database-postgresql | `org.flywaydb` | 12.1.0 | 検証済み 3rdパーティ（schema migration） |
 | _jaddress-rdb-api_ | `org.unlaxer` | _（Phase 1 で新設予定・予約）_ | rdb port（DAO interface + 永続 domain 型） |
 
-過去トレインと検証エビデンスは **[CHANGELOG.md](CHANGELOG.md)**（現在値はこの pom、履歴と根拠は doc の二層）。
+過去トレインと検証エビデンスは **[CHANGELOG.md](CHANGELOG.md)** および **[history/](history/) ディレクトリ**（現在値は pom、履歴と根拠は doc の二層）。
 
 ## 運用ルール
 
@@ -64,7 +67,7 @@ vacant 製品群の **共通 BOM（検証済みバージョンセット / Bill o
 Maven Central 未公開。ローカルでは `mvn install` で各 .m2 に配置:
 
 ```bash
-mvn install   # → org.unlaxer:unlaxer-bom:2026.06 が .m2 に入る
+mvn install   # → org.unlaxer:unlaxer-bom:2026.49 が .m2 に入る
 ```
 
 publish の議論は onigiri-parser#78 を参照。
