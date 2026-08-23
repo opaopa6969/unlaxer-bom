@@ -6,6 +6,18 @@
 
 > 各トレインごとの履歴ファイル（新しい順）は [history/INDEX.md](history/INDEX.md) を参照。
 
+## [2026.50] - 2026-08-24
+
+> 変更: **japanpost-history 1.1.0 追加**（新規エントリ。他は 2026.49 のまま）。
+>
+> - `org.unlaxer:japanpost-history:1.1.0` — 時系列郵便番号辞書。
+>   municipality-history と同じ `PostcodeWithContext` 連携を持ち、
+>   GitHub Packages（unlaxer-bom registry）に publish 済み。
+>   1.1.0 は SQLite 版辞書（`USE_SQLITE=true` が既定）を導入し、
+>   ヒープ約 33MB で動作（メモリ版の約 1/10）。外部 API は変更なし
+>   （突き合わせテスト 12 件で確認、97 テスト全通過）。
+> - BOM 自身のバージョンは 2026.49 → 2026.50。
+
 ## [2026.49] - 2026-08-13
 
 > 変更: **onigiri-parser 0.9.29 → 0.9.30 / building-hierarchy 0.19.1 → 0.19.4**（他は 2026.48 のまま）。
