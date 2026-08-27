@@ -26,3 +26,8 @@ jobs:
 
       - name: Validate BOM pom
         run: mvn -B -N validate
+
+      - name: Test BOM version drift checker
+        run: |
+          python3 -m unittest discover -s tests -v
+          python3 scripts/check-bom-version-drift.py --bom pom.xml pom.xml

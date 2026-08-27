@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/scripts/check-bom-version-drift.py\" --hook",
+            "timeout": 20,
+            "statusMessage": "BOM version drift check"
+          }
+        ]
+      }
+    ]
+  }
+}

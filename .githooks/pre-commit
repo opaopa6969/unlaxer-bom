@@ -1,0 +1,3 @@
+#!/bin/sh
+# 有効化（clone 後に1回）: git config core.hooksPath .githooks
+python3 "$(git rev-parse --show-toplevel)/scripts/check-bom-version-drift.py" --staged || exit 1
