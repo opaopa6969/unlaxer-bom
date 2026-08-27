@@ -1,6 +1,6 @@
 # 設計: 製品ライン対応 BOM + rdb の port 分離
 
-> ステータス: **設計確定・未実装**(2026-06-15)
+> ステータス: **設計確定・Phase 0 完了**(2026-06-15 設計確定、2026-06-15 Phase 0 merge)
 > 中立リポ(unlaxer-bom)に置く製品横断の設計ドキュメント。実装は本ドキュメントの段階プランに従う。
 
 ## 1. 目的 / 背景
@@ -89,13 +89,13 @@ port 化ではこの継ぎ目を `jaddress-rdb-api` 側の正式な境界に昇�
 
 ## 7. 段階プラン
 
-| Phase | 内容 | 前提/リスク |
-|-------|------|------------|
-| **0** | `unlaxer-bom` を共通 BOM として再定義(README / 役割)。doma 3.6.0・flyway 12.1.0 を dependencyManagement に追加。`jaddress-rdb-api` の枠を予約 | なし・低リスク |
-| **1** | `jaddress-rdb-api` 新設。DAO interface と永続 domain 型を抽出し、**entity/dao → model/parser の上向き参照を切断** | 本体工事(循環断ち) |
-| **2** | `vacant-rdb` を独立 jar 化(parser schema の entity / dao / Doma SQL / Flyway)。onigiri-parser を port のみ依存に。vacant-service が vacant-rdb を結線 | Phase 1 完了が前提 |
-| **3** | `vacant-bom` を新設(共通 BOM import + vacant-rdb / vacant-service 固定)。opaopa6969 / caulis 両 remote へ publish | Phase 2 完了が前提 |
-| **4(将来)** | `address-normalize-rdb` / `-service` / `-bom` を Phase 2-3 と同型で追加 | 布石の回収 |
+| Phase | 内容 | 前提/リスク | 状態 |
+|-------|------|------------|------|
+| **0** | `unlaxer-bom` を共通 BOM として再定義(README / 役割)。doma 3.6.0・flyway 12.1.0 を dependencyManagement に追加。`jaddress-rdb-api` の枠を予約 | なし・低リスク | **完了**(PR #2, merge 089733d, 2026-06-15) |
+| **1** | `jaddress-rdb-api` 新設。DAO interface と永続 domain 型を抽出し、**entity/dao → model/parser の上向き参照を切断** | 本体工事(循環断ち) | 未着手（onigiri-parser 側で実施。受け入れ条件: entity/dao → model/parser 上向き参照 0 件） |
+| **2** | `vacant-rdb` を独立 jar 化(parser schema の entity / dao / Doma SQL / Flyway)。onigiri-parser を port のみ依存に。vacant-service が vacant-rdb を結線 | Phase 1 完了が前提 | 未着手 |
+| **3** | `vacant-bom` を新設(共通 BOM import + vacant-rdb / vacant-service 固定)。opaopa6969 / caulis 両 remote へ publish | Phase 2 完了が前提 | 未着手 |
+| **4(将来)** | `address-normalize-rdb` / `-service` / `-bom` を Phase 2-3 と同型で追加 | 布石の回収 | 将来 |
 
 ## 8. 決定事項(本設計で確定済み)
 
