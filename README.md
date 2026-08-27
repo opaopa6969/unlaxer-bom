@@ -53,7 +53,7 @@ vacant 製品群の **共通 BOM（検証済みバージョンセット / Bill o
 | japanpost-history | `org.unlaxer` | 1.3.0 | 時系列郵便番号辞書（municipality-history 連携・PostcodeWithContext が利用。1.2.0 で差分方式、1.3.0 で diff 39 倍高速化） |
 | doma-core / doma-processor | `org.seasar.doma` | 3.6.0 | 検証済み 3rdパーティ（SQL/DAO） |
 | flyway-core / flyway-database-postgresql | `org.flywaydb` | 12.1.0 | 検証済み 3rdパーティ（schema migration） |
-| _jaddress-rdb-api_ | `org.unlaxer` | _（Phase 1 で新設予定・予約）_ | rdb port（DAO interface + 永続 domain 型） |
+| _jaddress-rdb-api_ | `org.unlaxer` | _（Phase 0 で枠予約済み・Phase 1 で新設予定）_ | rdb port（DAO interface + 永続 domain 型） |
 
 過去トレインと検証エビデンスは **[CHANGELOG.md](CHANGELOG.md)** および **[history/](history/) ディレクトリ**（現在値は pom、履歴と根拠は doc の二層）。
 
