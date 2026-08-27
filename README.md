@@ -62,6 +62,39 @@ vacant 製品群の **共通 BOM（検証済みバージョンセット / Bill o
 - トレインを切る（新しい組み合わせを検証した）人が、`pom.xml` のバージョンを上げ、`CHANGELOG.md` に1ブロック追記する
 - 中立リポ（どのエージェント/チームの縄張りでもない）。統合 PR を出した側が更新する
 
+### consumer の明示 version drift を検査する
+
+`scripts/check-bom-version-drift.py` は、この BOM が管理する座標について、consumer POM の
+明示 version（通常依存と consumer 側の dependencyManagement）と BOM pin が異なれば失敗する。
+consumer が BOM を import しているかどうかは問わない。
+同じ version の明示指定と version 省略は許容する。
+
+```bash
+# unlaxer-bom と consumer を同じ workspace に clone して実行
+python3 unlaxer-bom/scripts/check-bom-version-drift.py \
+  --bom unlaxer-bom/pom.xml consumer/pom.xml consumer/module/pom.xml
+```
+
+意図的に BOM より先行する場合などは、該当する `dependency` 内に理由を残す。
+
+```xml
+<dependency>
+  <groupId>org.unlaxer</groupId>
+  <artifactId>japanese-parser-common</artifactId>
+  <version>0.3.7</version>
+  <!-- bom 例外: unlaxer-bom #123 に入るまでの先行検証 -->
+</dependency>
+```
+
+この repo では同じ判定を次の3入口で使う。
+
+- **Claude Code**: `.claude/settings.json` の PreToolUse hook。POM の Write/Edit を事前検査する
+- **git**: `git config core.hooksPath .githooks` で pre-commit を有効化し、index 上の全 POM を検査する
+- **手動 / CI**: 上記 CLI と `python3 -m unittest discover -s tests -v`
+
+consumer repo へ展開するときも、判定を緩めた別実装を作らずこの checker を基準にする。
+consumer の pre-commit / hook から使う場合は `--bom /path/to/unlaxer-bom/pom.xml` を渡せる。
+
 ## 配置
 
 Maven Central 未公開。ローカルでは `mvn install` で各 .m2 に配置:
