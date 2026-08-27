@@ -23,7 +23,7 @@ vacant 製品群の **共通 BOM（検証済みバージョンセット / Bill o
     <dependency>
       <groupId>org.unlaxer</groupId>
       <artifactId>unlaxer-bom</artifactId>
-      <version>2026.49</version>
+      <version>2026.53</version>
       <type>pom</type>
       <scope>import</scope>
     </dependency>
@@ -39,7 +39,7 @@ vacant 製品群の **共通 BOM（検証済みバージョンセット / Bill o
 </dependencies>
 ```
 
-## 現在のトレイン: `2026.49`
+## 現在のトレイン: `2026.53`
 
 | artifact | groupId | version | 備考 |
 |----------|---------|---------|------|
@@ -50,6 +50,7 @@ vacant 製品群の **共通 BOM（検証済みバージョンセット / Bill o
 | onigiri-parser | `org.unlaxer` | 0.9.30 | onigiri 住所パーサー |
 | historical-town-names | `org.unlaxer` | 0.1.0 | 歴史地名辞書（町名照合失敗時の字消費 fallback。onigiri 0.9.11 が利用） |
 | municipality-history | `org.unlaxer` | 1.0.2 | 自治体統廃合履歴（historical-town-names の依存） |
+| japanpost-history | `org.unlaxer` | 1.3.0 | 時系列郵便番号辞書（municipality-history 連携・PostcodeWithContext が利用。1.2.0 で差分方式、1.3.0 で diff 39 倍高速化） |
 | doma-core / doma-processor | `org.seasar.doma` | 3.6.0 | 検証済み 3rdパーティ（SQL/DAO） |
 | flyway-core / flyway-database-postgresql | `org.flywaydb` | 12.1.0 | 検証済み 3rdパーティ（schema migration） |
 | _jaddress-rdb-api_ | `org.unlaxer` | _（Phase 1 で新設予定・予約）_ | rdb port（DAO interface + 永続 domain 型） |
@@ -100,7 +101,7 @@ consumer の pre-commit / hook から使う場合は `--bom /path/to/unlaxer-bom
 Maven Central 未公開。ローカルでは `mvn install` で各 .m2 に配置:
 
 ```bash
-mvn install   # → org.unlaxer:unlaxer-bom:2026.49 が .m2 に入る
+mvn install   # → org.unlaxer:unlaxer-bom:2026.53 が .m2 に入る
 ```
 
 publish の議論は onigiri-parser#78 を参照。
