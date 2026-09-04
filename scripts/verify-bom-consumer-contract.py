@@ -684,7 +684,11 @@ def verify(
 
 
 def remove_workspace(workspace: Path) -> None:
-    """後始末の失敗を黙って握りつぶさない（残骸の場所を必ず知らせる）。"""
+    """後始末の失敗を黙って握りつぶさない（残骸の場所を必ず知らせる）。
+
+    プロセスが強制終了された場合はここ自体が走らない。そのため作業用ディレクトリは
+    生成した時点でも stderr に出しておく。
+    """
     errors: list[str] = []
 
     def record(_function, path, exception):
@@ -725,6 +729,8 @@ def main() -> int:
         maven_executable()
         directory = tempfile.mkdtemp(prefix="bom-consumer-contract-")
         workspace = Path(directory)
+        # 作った時点で知らせる。強制終了されて finally が走らなくても場所が分かるようにする。
+        print(f"作業用ディレクトリ: {workspace}", file=sys.stderr)
         repo_local = (arguments.repo_local.resolve() if arguments.repo_local
                       else workspace / "repository")
         repo_local.mkdir(parents=True, exist_ok=True)

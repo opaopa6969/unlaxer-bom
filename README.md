@@ -46,6 +46,42 @@ vacant 製品群の **共通 BOM（検証済みバージョンセット / Bill o
 > どの座標がどちらかは `pom.xml` の `bom registry:` 宣言か、
 > [検証スクリプトの出力](#bom-の-pin-が実際に解決でき-compile-できるか検証する)で確認できる。
 
+#### GitHub Packages 側の座標を使うには
+
+consumer の POM に repository を足し、`read:packages` を持つトークンを settings.xml に置く。
+**`<id>` が両方で一致していないと Maven は資格情報を送らない**（無言で 401 → 「見つからない」になる）。
+
+```xml
+<!-- consumer の pom.xml -->
+<repositories>
+  <repository>
+    <id>github-unlaxer</id>
+    <url>https://maven.pkg.github.com/opaopa6969/unlaxer-bom</url>
+  </repository>
+</repositories>
+```
+
+```xml
+<!-- ~/.m2/settings.xml（コミットしない） -->
+<settings>
+  <servers>
+    <server>
+      <id>github-unlaxer</id>
+      <username>あなたの GitHub ユーザー名</username>
+      <password>${env.GH_PKG_TOKEN}</password>
+    </server>
+  </servers>
+</settings>
+```
+
+```bash
+GH_PKG_TOKEN=<read:packages トークン> mvn compile
+```
+
+`<password>` に実値を書かず `${env.GH_PKG_TOKEN}` にしておくと、トークンがディスクに残らない。
+逆に、**この `<id>` を持つ `<server>` が既に settings.xml にあると、意図しないトークンが
+送られることがある**（Maven は id の文字列一致だけで選ぶ）。
+
 ### 動作要件
 
 | | 要件 | 根拠 |
@@ -53,8 +89,15 @@ vacant 製品群の **共通 BOM（検証済みバージョンセット / Bill o
 | Java | **21 以上** | `pom.xml` の `<java.baseline>`。`unlaxer-common:3.0.11` の class file version が 65（= Java 21）。doma / flyway は 17 だが、トレイン全体の下限は 21 |
 | Maven | 3.9 系で検証（BOM の import scope 自体は 3.x 全般で動く） | CI と開発環境 |
 
-Java 21 未満だと **compile は通って実行時にだけ `UnsupportedClassVersionError`** で落ちる。
-この下限は宣言値ではなく、解決した jar の bytecode を実測して検証している（下記スクリプト）。
+Java 21 未満だとどうなるかは、**どこで compile したか**で変わる（いずれも実測）。
+
+- JDK 21 未満で **直接 compile** すると、その場で落ちる:
+  `bad class file: ... class file has wrong version 65.0, should be 61.0`
+- JDK 21 で compile したものを **JDK 21 未満で実行**すると、実行時にだけ落ちる:
+  `UnsupportedClassVersionError: ... class file version 65.0 ... only recognizes ... up to 61.0`
+
+危ないのは後者（build machine と実行環境が違う場合）。この下限は宣言値を信じるのではなく、
+解決した jar の bytecode を実測して検証している（下記スクリプト）。
 
 ## 現在のトレイン: `2026.53`
 
@@ -190,14 +233,38 @@ GH_PKG_USER=<user> GH_PKG_TOKEN=<read:packages トークン> \
 #### この検証が保証しないこと
 
 - **pin が「トレインとして意図した版」であること**は保証しない。実在して使えることまでしか見ない。
-  `3.6.0` を `3.5.0` と打ち間違えても、その版が実在して API 互換なら通る。
-  トレインの意図との突き合わせは `CHANGELOG.md` / `history/` の人手レビューが担う
+  `12.1.0` を `11.8.2` と打ち間違えても、その版が実在すれば通る。
+  トレインの意図との突き合わせは現在 `CHANGELOG.md` / `history/` の人手レビューが担う（issue #10）
+- **consumer が明示 version を書いたら BOM は負ける。** Maven の仕様で、明示指定は import した
+  pin に無条件で勝ち、警告も出ない。これを防ぐのは `check-bom-version-drift.py` だけで、
+  consumer repo 側で hook / CI に組み込まない限り機構としては何も強制されない
+- **`java.baseline` は consumer に伝播しない。** import scope が運ぶのは dependencyManagement だけで
+  property は運ばれない。consumer 側の `maven.compiler.release` が低くても Maven は何も言わない
+  （依存 jar の bytecode 版数を見ないため）。ここで検証しているのは
+  「BOM が固定した jar が、宣言した下限で動くか」であって consumer の設定ではない
 - consumer repo の POM は見ない。それは `check-bom-version-drift.py` の担当
+
+#### 第三者が採用するときの判断
+
+`bom registry: github` の 7 座標（unlaxer 製品本体）は、**認証を持たない第三者には
+resolve を再現できない**。PR の CI も secret を持たないため証明しない。
+選べるのは次のどちらかで、どちらを取るかは採用側が明示的に決めること。
+
+1. 自分で `read:packages` トークンを用意し、`--include-github --require-all` を自分でも回す
+2. release 時の publish ワークフロー（deploy 前に `--require-all` を通す）の green を信頼材料として受け入れる
+
+#### 2 つのスクリプトの exit code の違い
+
+未解決 property のような「POM を読めない」系のエラーで、
+`check-bom-version-drift.py` は **2**、`verify-bom-consumer-contract.py` は **1** を返す。
+前者の 2 は Claude Code の PreToolUse hook で編集を止めるための値であり、意図的に変えていない。
+両方を1つの自動化から呼ぶ場合は「非 0 なら失敗」で扱うこと。
 
 #### 実行時の注意
 
 - 作業用ディレクトリは `tempfile` 既定（`TMPDIR` があればそこ）に作られ、終了時に消える。
-  消せなかった場合は場所を stderr に出す（黙って残さない）
+  **場所は生成した時点で stderr に出す**（強制終了されて後始末が走らなくても分かるように）。
+  消せなかった場合も場所を出す
 - **offline 挙動を試すときは `mvn -o` か `settings.xml` の `<proxy>` を使う。**
   `MAVEN_OPTS` の `-Dhttp.proxyHost` は Maven の resolver に効かず、
   「offline を試したつもりで実際は通信していた」という誤解を生む
