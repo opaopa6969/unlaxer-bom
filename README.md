@@ -123,8 +123,9 @@ resolve は成功して compile だけが落ちる型で、ここでだけ捕ま
 | exit | 意味 |
 |------|------|
 | 0 | 契約成立 |
-| 1 | 契約違反（pin が注入されない / resolve・compile 失敗 / `bom registry` 宣言の不備） |
-| 2 | 確かめられなかった（Java・Maven 不在、Maven Central へ到達不可） |
+| 1 | 契約違反（pin が注入されない / resolve・compile 失敗 / `bom registry` 宣言の不備 /
+       BOM を読めない・pin の property を解決できない） |
+| 2 | 確かめられなかった（Java・Maven 不在、Maven Central へ到達不可）。**環境の問題だけ** |
 
 「壊れている」と「確かめられなかった」を混同しない。どちらも CI は失敗する。
 

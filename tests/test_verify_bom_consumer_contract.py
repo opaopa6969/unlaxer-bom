@@ -185,7 +185,13 @@ class ConsumerGenerationTest(unittest.TestCase):
 
     def test_settings_omit_servers_without_credentials(self):
         self.assertNotIn("<servers>", contract.settings_xml(None))
-        self.assertIn("<id>github-unlaxer</id>", contract.settings_xml(("github-unlaxer", "u", "t")))
+
+    def test_settings_never_embed_the_token_value(self):
+        """トークンの実値をディスクに書かない。Maven の ${env.*} 補間に任せる。"""
+        settings = contract.settings_xml("github-unlaxer")
+        self.assertIn("<id>github-unlaxer</id>", settings)
+        self.assertIn("${env.GH_PKG_TOKEN}", settings)
+        self.assertIn("${env.GH_PKG_USER}", settings)
 
 
 class InjectionCheckTest(unittest.TestCase):
@@ -257,21 +263,68 @@ class EnvironmentTest(unittest.TestCase):
         finally:
             shutil.which = original
 
-    def test_github_credentials_are_read_from_environment_only(self):
+    def test_github_credentials_are_only_checked_for_presence(self):
         import os
 
         previous = {name: os.environ.pop(name, None) for name in ("GH_PKG_USER", "GH_PKG_TOKEN")}
         try:
-            with self.assertRaises(contract.Unrunnable):
-                contract.github_credentials()
+            with self.assertRaises(contract.Unrunnable) as raised:
+                contract.require_github_credentials()
+            self.assertIn("GH_PKG_USER", str(raised.exception))
+            self.assertIn("GH_PKG_TOKEN", str(raised.exception))
             os.environ["GH_PKG_USER"] = "someone"
             os.environ["GH_PKG_TOKEN"] = "secret-value"
-            self.assertEqual(("someone", "secret-value"), contract.github_credentials())
+            self.assertIsNone(contract.require_github_credentials())
         finally:
             for name, value in previous.items():
                 os.environ.pop(name, None)
                 if value is not None:
                     os.environ[name] = value
+
+
+class ExitCodeTest(unittest.TestCase):
+    """「壊れている」(1) と「確かめられなかった」(2) を混同しない。"""
+
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.root = Path(self.temporary.name)
+
+    def tearDown(self):
+        self.temporary.cleanup()
+
+    def run_main(self, arguments: list[str]) -> int:
+        import contextlib
+        import io
+        import sys
+
+        previous = sys.argv
+        sys.argv = ["verify-bom-consumer-contract.py", *arguments]
+        try:
+            with contextlib.redirect_stderr(io.StringIO()), contextlib.redirect_stdout(io.StringIO()):
+                return contract.main()
+        finally:
+            sys.argv = previous
+
+    def test_unresolvable_pin_property_is_a_contract_violation(self):
+        path = self.root / "pom.xml"
+        path.write_text(
+            bom_pom(
+                managed_dependency(
+                    "org.unlaxer", "unlaxer-common", "${unlaxer-common.versoin}",
+                    "bom registry: central",
+                )
+            ),
+            encoding="utf-8",
+        )
+        self.assertEqual(1, self.run_main(["--bom", str(path)]))
+
+    def test_unreadable_pom_is_a_contract_violation(self):
+        path = self.root / "pom.xml"
+        path.write_text("<project", encoding="utf-8")
+        self.assertEqual(1, self.run_main(["--bom", str(path)]))
+
+    def test_absent_bom_file_is_unrunnable(self):
+        self.assertEqual(2, self.run_main(["--bom", str(self.root / "missing.xml")]))
 
 
 class RenderTest(unittest.TestCase):

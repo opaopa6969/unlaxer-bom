@@ -275,17 +275,19 @@ public final class BomConsumerContract {{
 """
 
 
-def settings_xml(server: tuple[str, str, str] | None) -> str:
-    """利用者の ~/.m2/settings.xml（mirror 等）に結果が依存しないよう、隔離した settings を使う。"""
+def settings_xml(server_id: str | None) -> str:
+    """利用者の ~/.m2/settings.xml（mirror 等）に結果が依存しないよう、隔離した settings を使う。
+
+    認証情報は Maven の ${env.*} 補間に任せ、値をこのプロセスにもディスクにも持たない。
+    """
     servers = ""
-    if server is not None:
-        identifier, username, password = server
+    if server_id is not None:
         servers = (
             "  <servers>\n"
             "    <server>\n"
-            f"      <id>{identifier}</id>\n"
-            f"      <username>{username}</username>\n"
-            f"      <password>{password}</password>\n"
+            f"      <id>{server_id}</id>\n"
+            "      <username>${env.GH_PKG_USER}</username>\n"
+            "      <password>${env.GH_PKG_TOKEN}</password>\n"
             "    </server>\n"
             "  </servers>\n"
         )
@@ -313,7 +315,6 @@ def run_maven(arguments: list[str], *, cwd: Path, repo_local: Path, settings: Pa
         text=True,
         capture_output=True,
         check=False,
-        env={**os.environ, "MAVEN_OPTS": os.environ.get("MAVEN_OPTS", "")},
     )
     return completed.returncode, completed.stdout + completed.stderr
 
@@ -326,7 +327,7 @@ def maven_failure(action: str, output: str) -> Exception:
     if not tail:
         tail = output[-2000:]
     if any(marker in output for marker in UNRUNNABLE_MARKERS):
-        return Unrunnable(f"{action} を完了できませんでした（ネットワークまたは環境の問題）:\n{tail}")
+        return Unrunnable(f"{action} を完了できませんでした（ネットワーク・認証・環境の問題）:\n{tail}")
     return ContractViolation(f"{action} が失敗しました:\n{tail}")
 
 
@@ -403,16 +404,14 @@ def probe_central(timeout: float) -> None:
         ) from error
 
 
-def github_credentials() -> tuple[str, str]:
-    """トークンは環境変数からのみ受け取る（コマンドライン・出力に残さない）。"""
-    user = os.environ.get("GH_PKG_USER")
-    token = os.environ.get("GH_PKG_TOKEN")
-    if not user or not token:
+def require_github_credentials() -> None:
+    """環境変数の有無だけを確かめる。値は読まない（プロセスにも出力にも残さないため）。"""
+    missing = [name for name in ("GH_PKG_USER", "GH_PKG_TOKEN") if not os.environ.get(name)]
+    if missing:
         raise Unrunnable(
-            "--include-github には環境変数 GH_PKG_USER と GH_PKG_TOKEN が必要です"
-            "（トークンは引数では受け取りません）。"
+            f"--include-github には環境変数 {' と '.join(missing)} が必要です"
+            "（トークンは引数では受け取らず、値も読みません）。"
         )
-    return user, token
 
 
 def render(
@@ -457,24 +456,24 @@ def verify(
     managed = drift.managed_versions(bom_path)
     buckets = classify_registries(managed, registry_declarations(project))
 
-    server = None
+    server_id = None
     extra_repository = None
     targets = list(buckets["central"])
     if include_github:
-        user, token = github_credentials()
+        require_github_credentials()
         repository = distribution_repository(project)
         if repository is None:
             raise Unrunnable(
                 "--include-github には BOM の distributionManagement に repository が必要です。"
             )
         extra_repository = repository
-        server = (repository[0], user, token)
+        server_id = repository[0]
         targets = sorted(targets + buckets["github"])
 
     probe_central(timeout)
 
     settings = workspace / "settings.xml"
-    settings.write_text(settings_xml(server), encoding="utf-8")
+    settings.write_text(settings_xml(server_id), encoding="utf-8")
 
     code, output = run_maven(
         ["-N", "install"], cwd=bom_path.parent, repo_local=repo_local, settings=settings
@@ -549,10 +548,12 @@ def main() -> int:
             else:
                 shutil.rmtree(workspace, ignore_errors=True)
         return 0
-    except ContractViolation as error:
+    except (ContractViolation, PomError) as error:
+        # PomError（POM を読めない / pin の property を解決できない）は BOM 自身の欠陥であり、
+        # 「確かめられなかった」ではなく契約が壊れている状態。
         print(f"BOM consumer 契約違反: {error}", file=sys.stderr)
         return 1
-    except (Unrunnable, PomError) as error:
+    except Unrunnable as error:
         print(f"BOM consumer 契約を検証できません: {error}", file=sys.stderr)
         return 2
 
