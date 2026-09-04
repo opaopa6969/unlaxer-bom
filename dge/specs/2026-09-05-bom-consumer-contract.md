@@ -177,3 +177,55 @@ unittest には含めない（ネットワークと Maven に依存し、ロー�
 ## 8. 巻き戻し
 
 PR の revert のみ。decision の「巻き戻し」節を参照。
+
+---
+
+## 9. reality-check による追加仕様（反復 2-3）
+
+記録: [../sessions/2026-09-05-bom-consumer-contract-reality-check.md](../sessions/2026-09-05-bom-consumer-contract-reality-check.md)
+
+### 9.1 pin 欠落の検出（反復 3 / critical）
+
+`dependencyManagement` に `<version>` の無い dependency があれば **fatal**。座標を名指しする。
+version が無いと BOM は何も固定せず、`managed_versions()` からも黙って消えるため
+表の行数が減るだけで exit 0 になっていた。
+
+### 9.2 Java baseline 契約（反復 3 / high）
+
+`pom.xml` の `<java.baseline>` を **fail-closed** で要求する（registry 宣言と同じ扱い）。
+
+- 生成 consumer の `maven.compiler.release` はこの値を使う（ハードコードしない）
+- 解決した jar の class file major version を実測し、`major - 44 > baseline` なら契約違反
+- `META-INF/versions/` 配下は multi-release jar の意図的な上位版なので除外する
+- compile は通るのに実行時だけ `UnsupportedClassVersionError` になる型は compile 検証では
+  捕まらない。だから bytecode を直接読む
+
+### 9.3 過大主張の禁止（反復 3 / critical）
+
+未検証座標が 1 つでも残る実行は、要約で「契約成立」と言わない。
+
+- 「**部分検証**」と表示し、未検証座標では pin が架空でも検出できないことを明示する
+- `--require-all`: 未検証が残れば exit 1
+- `publish.yml` の deploy 前に `--include-github --require-all` を通す（release だけ完全検証を要求）
+- 保証しないこと（「意図した版か」は見ていない）を毎回出力する
+
+### 9.4 exit code の意味（反復 2）
+
+`PomError`（POM を読めない / pin の property を解決できない）は BOM 自身の欠陥なので **exit 1**。
+exit 2 は環境の問題（Java・Maven 不在、Central 到達不可、認証不可）に限定する。
+
+### 9.5 secret の扱い（反復 2）
+
+生成する `settings.xml` にトークンの実値を書かない。Maven の `${env.*}` 補間に任せ、
+値をこのプロセスにも読み込まない（存在確認のみ）。`--keep` してもディスクに残らない。
+
+### 9.6 診断（反復 3 / medium）
+
+- 401/403 は「ネットワーク障害」ではなく「認証の問題」として分類し、`read:packages` の確認を促す
+- 一時ディレクトリを削除できなければ、場所を stderr に出す（無警告で残さない）
+
+### 9.7 追加テスト
+
+反復 1 の 12 件から 44 件へ（既存 drift checker の 12 件と合わせて 56 件）。
+pin 欠落・Java baseline（bytecode 読み取り・multi-release 除外・下限超過）・
+`--require-all`・過大主張の禁止・認証失敗の分類・exit code の 3 値を固定した。

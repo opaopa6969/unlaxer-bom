@@ -71,6 +71,31 @@ public / private の宣言は `pom.xml` に置く。既存の `<!-- bom 例外: 
 - **隔離した local repository を毎回使う。** `~/.m2` を汚さず、cache 状態に結果が依存しない（再実行の決定性）。
 - **`central` 宣言が 1 件も無い BOM は fatal。** 全部 `github` にすれば検証が空になる、という抜け道を塞ぐ。
 
+## reality-check の結果を受けた追加判断（反復 2-3）
+
+記録と証拠: [../sessions/2026-09-05-bom-consumer-contract-reality-check.md](../sessions/2026-09-05-bom-consumer-contract-reality-check.md)
+
+独立評価者 2 名が実 artifact を操作して critical 2 件・high 3 件を出した。最も重い指摘は
+**「未検証の座標が 7 つあるのに、要約と exit code は BOM 全体の成功を主張していた」**。
+評価者は github 座標を架空の `99.99.99` にして CI と同じ実行が green になることを実証した。
+
+これに対する判断は「検証範囲を広げる」ではなく **「主張を実態に合わせ、完全検証を release に置く」**。
+
+- PR の CI は secret を持たない設計を維持する（CHANGELOG `[2026.48]` で
+  「secret 未設定の CI でも通る」ことを実測で確認した経緯を捨てない）
+- 代わりに `--require-all` を追加し、`publish.yml` の deploy 前に
+  `--include-github --require-all` を通す。**release だけが完全検証を要求する**（fail-closed）
+- 既定の実行は「部分検証」と名乗り、未検証座標では pin が架空でも検出できないことを毎回言う
+
+あわせて `<java.baseline>` を宣言必須にし、解決した jar の class file version を実測する。
+compile は通って実行時だけ `UnsupportedClassVersionError` になる型は compile 検証では
+捕まらないため、bytecode を直接読む。
+
+**`publish.yml` を変えることの意味**: release トークンに `read:packages` が無い場合、
+publish はここで止まる。これは意図した fail-closed であり、
+「確かめられないまま publish する」より安全だと判断した。止まったときの対処は
+エラーメッセージが名指しする。
+
 ## 互換性
 
 - `scripts/check-bom-version-drift.py` は**一切変更しない**。3 入口（CLI / `--staged` / `--hook`）の挙動も不変。
