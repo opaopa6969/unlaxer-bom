@@ -39,6 +39,23 @@ vacant 製品群の **共通 BOM（検証済みバージョンセット / Bill o
 </dependencies>
 ```
 
+> **これだけでは resolve できない座標がある。** BOM が固定する 12 座標のうち
+> **Maven Central にあるのは 5 つだけ**で、残り 7 つ（上の例の `building-hierarchy` を含む）は
+> **GitHub Packages にしか無く `read:packages` 認証が要る**。認証が無いと Maven は
+> `Could not find artifact ... in central` としか言わず、401 と 404 を区別しない。
+> どの座標がどちらかは `pom.xml` の `bom registry:` 宣言か、
+> [検証スクリプトの出力](#bom-の-pin-が実際に解決でき-compile-できるか検証する)で確認できる。
+
+### 動作要件
+
+| | 要件 | 根拠 |
+|---|------|------|
+| Java | **21 以上** | `pom.xml` の `<java.baseline>`。`unlaxer-common:3.0.11` の class file version が 65（= Java 21）。doma / flyway は 17 だが、トレイン全体の下限は 21 |
+| Maven | 3.9 系で検証（BOM の import scope 自体は 3.x 全般で動く） | CI と開発環境 |
+
+Java 21 未満だと **compile は通って実行時にだけ `UnsupportedClassVersionError`** で落ちる。
+この下限は宣言値ではなく、解決した jar の bytecode を実測して検証している（下記スクリプト）。
+
 ## 現在のトレイン: `2026.53`
 
 | artifact | groupId | version | 備考 |
@@ -155,6 +172,39 @@ resolve は成功して compile だけが落ちる型で、ここでだけ捕ま
 GH_PKG_USER=<user> GH_PKG_TOKEN=<read:packages トークン> \
   python3 scripts/verify-bom-consumer-contract.py --include-github
 ```
+
+#### release 前は `--require-all` で全座標を要求する
+
+**PR の CI は secret を持たないため 12 座標中 5 座標しか resolve を確かめられない。**
+GitHub Packages 側の pin が架空でも、その実行は「部分検証」として exit 0 になる。
+出力は未検証座標を必ず列挙するが、**exit 0 を「全部確かめた」と読んではいけない**。
+
+そのため release 時（`.github/workflows/publish.yml`）は deploy の前に
+`--include-github --require-all` を通す。未検証が 1 つでも残れば exit 1 で publish しない。
+
+```bash
+GH_PKG_USER=<user> GH_PKG_TOKEN=<read:packages トークン> \
+  python3 scripts/verify-bom-consumer-contract.py --include-github --require-all
+```
+
+#### この検証が保証しないこと
+
+- **pin が「トレインとして意図した版」であること**は保証しない。実在して使えることまでしか見ない。
+  `3.6.0` を `3.5.0` と打ち間違えても、その版が実在して API 互換なら通る。
+  トレインの意図との突き合わせは `CHANGELOG.md` / `history/` の人手レビューが担う
+- consumer repo の POM は見ない。それは `check-bom-version-drift.py` の担当
+
+#### 実行時の注意
+
+- 作業用ディレクトリは `tempfile` 既定（`TMPDIR` があればそこ）に作られ、終了時に消える。
+  消せなかった場合は場所を stderr に出す（黙って残さない）
+- **offline 挙動を試すときは `mvn -o` か `settings.xml` の `<proxy>` を使う。**
+  `MAVEN_OPTS` の `-Dhttp.proxyHost` は Maven の resolver に効かず、
+  「offline を試したつもりで実際は通信していた」という誤解を生む
+- consumer 側で `<repository><id>github-unlaxer</id>` を書くと、Maven は同じ id を持つ
+  `~/.m2/settings.xml` の `<server>` を**文字列一致だけ**で選び、そのトークンを送る。
+  意図しない資格情報が使われないか確認すること。この検証スクリプト自身は
+  毎回隔離した `settings.xml` を生成してこの経路を断っている
 
 ## 配置
 

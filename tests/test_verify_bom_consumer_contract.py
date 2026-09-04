@@ -1,9 +1,11 @@
 import importlib.util
 from pathlib import Path
 import shutil
+import struct
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
+import zipfile
 
 
 SCRIPTS = Path(__file__).parents[1] / "scripts"
@@ -38,6 +40,7 @@ def bom_pom(dependencies: str) -> str:
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.unlaxer</groupId><artifactId>unlaxer-bom</artifactId><version>2026.53</version>
   <packaging>pom</packaging>
+  <properties><java.baseline>21</java.baseline></properties>
   <distributionManagement>
     <repository>
       <id>github-unlaxer</id>
@@ -143,7 +146,7 @@ class ConsumerGenerationTest(unittest.TestCase):
 
     def test_consumer_imports_bom_and_omits_versions(self):
         text = contract.consumer_pom(
-            ("org.unlaxer", "unlaxer-bom", "2026.53"), [UNLAXER_COMMON, DOMA_CORE], None
+            ("org.unlaxer", "unlaxer-bom", "2026.53"), [UNLAXER_COMMON, DOMA_CORE], None, 21
         )
         root = self.parse(text)
         management = [e for e in root if drift.local_name(e.tag) == "dependencyManagement"][0]
@@ -158,17 +161,21 @@ class ConsumerGenerationTest(unittest.TestCase):
         for dependency in declared:
             self.assertIsNone(drift.child_text(dependency, "version"))
 
+    def test_consumer_compiles_against_the_declared_baseline(self):
+        text = contract.consumer_pom(("g", "a", "1"), [UNLAXER_COMMON], None, 17)
+        self.assertIn("<maven.compiler.release>17</maven.compiler.release>", text)
+
     def test_consumer_excludes_coordinates_it_cannot_resolve(self):
         text = contract.consumer_pom(
-            ("org.unlaxer", "unlaxer-bom", "2026.53"), [UNLAXER_COMMON], None
+            ("org.unlaxer", "unlaxer-bom", "2026.53"), [UNLAXER_COMMON], None, 21
         )
         self.assertNotIn("building-hierarchy", text)
 
     def test_consumer_adds_repository_only_when_requested(self):
-        without = contract.consumer_pom(("g", "a", "1"), [UNLAXER_COMMON], None)
+        without = contract.consumer_pom(("g", "a", "1"), [UNLAXER_COMMON], None, 21)
         self.assertNotIn("<repositories>", without)
         with_repository = contract.consumer_pom(
-            ("g", "a", "1"), [UNLAXER_COMMON], ("github-unlaxer", "https://example.invalid/m2")
+            ("g", "a", "1"), [UNLAXER_COMMON], ("github-unlaxer", "https://example.invalid/m2"), 21
         )
         self.assertIn("https://example.invalid/m2", with_repository)
 
@@ -243,6 +250,15 @@ class FailureClassificationTest(unittest.TestCase):
     def test_compile_error_is_a_contract_violation(self):
         error = contract.maven_failure("compile", "[ERROR] cannot find symbol\n  symbol: method of(int)")
         self.assertIsInstance(error, contract.ContractViolation)
+
+    def test_authentication_failure_names_authentication(self):
+        error = contract.maven_failure(
+            "resolve",
+            "[ERROR] Could not transfer artifact ... status code: 401, reason phrase: Unauthorized (401)",
+        )
+        self.assertIsInstance(error, contract.Unrunnable)
+        self.assertIn("認証", str(error))
+        self.assertIn("read:packages", str(error))
 
     def test_network_failure_is_unrunnable(self):
         for output in (
@@ -328,12 +344,150 @@ class ExitCodeTest(unittest.TestCase):
 
 
 class RenderTest(unittest.TestCase):
+    managed = {UNLAXER_COMMON: "3.0.11", BUILDING_HIERARCHY: "0.19.4"}
+
     def test_unverified_coordinates_are_listed_not_skipped(self):
-        managed = {UNLAXER_COMMON: "3.0.11", BUILDING_HIERARCHY: "0.19.4"}
-        output = contract.render(managed, {UNLAXER_COMMON})
+        output = contract.render(self.managed, {UNLAXER_COMMON}, 21, {UNLAXER_COMMON: 21})
         self.assertIn("org.unlaxer:building-hierarchy", output)
         self.assertIn("UNVERIFIED", output)
-        self.assertIn("resolution 1/2 検証済み・1 未検証", output)
+
+    def test_partial_run_never_claims_the_contract_holds(self):
+        """exit 0 を「全部確かめた」と読ませない。"""
+        output = contract.render(self.managed, {UNLAXER_COMMON}, 21, {UNLAXER_COMMON: 21})
+        self.assertIn("部分検証", output)
+        self.assertIn("pin が実在しなくてもこの実行では検出できない", output)
+        self.assertNotIn("全座標検証", output)
+
+    def test_full_run_says_so(self):
+        output = contract.render(
+            self.managed, set(self.managed), 21, {UNLAXER_COMMON: 21, BUILDING_HIERARCHY: 17}
+        )
+        self.assertIn("全座標検証", output)
+        self.assertNotIn("部分検証", output)
+
+    def test_limits_are_always_stated(self):
+        output = contract.render(self.managed, set(self.managed), 21, {})
+        self.assertIn("この検証が保証しないこと", output)
+
+    def test_measured_java_release_is_reported(self):
+        output = contract.render(self.managed, {UNLAXER_COMMON}, 21, {UNLAXER_COMMON: 21})
+        self.assertIn("Java baseline: 宣言 21 / 検証した jar の実測最大 21", output)
+
+
+class PinPresenceTest(unittest.TestCase):
+    """version を失った managed dependency が全検査から黙って消えないこと。"""
+
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.root = Path(self.temporary.name)
+
+    def tearDown(self):
+        self.temporary.cleanup()
+
+    def check(self, text: str):
+        path = self.root / "pom.xml"
+        path.write_text(text, encoding="utf-8")
+        project = drift.parse_pom(path)
+        try:
+            managed = drift.managed_versions(path)
+        except drift.PomError:
+            managed = {}
+        return contract.check_all_pins_present(project, managed)
+
+    def test_managed_dependency_without_version_is_fatal(self):
+        text = bom_pom(
+            managed_dependency("org.unlaxer", "unlaxer-common", "3.0.11", "bom registry: central")
+            + "      <dependency>\n"
+            "        <groupId>org.unlaxer</groupId>\n"
+            "        <artifactId>historical-town-names</artifactId>\n"
+            "        <!-- bom registry: github -->\n"
+            "      </dependency>\n"
+        )
+        with self.assertRaises(contract.ContractViolation) as raised:
+            self.check(text)
+        self.assertIn("org.unlaxer:historical-town-names", str(raised.exception))
+
+    def test_all_pins_present_passes(self):
+        self.assertIsNone(self.check(DEFAULT_BOM))
+
+
+class JavaBaselineTest(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.root = Path(self.temporary.name)
+
+    def tearDown(self):
+        self.temporary.cleanup()
+
+    def project(self, properties: str) -> ET.Element:
+        path = self.root / "pom.xml"
+        text = bom_pom(
+            managed_dependency("org.unlaxer", "unlaxer-common", "3.0.11", "bom registry: central")
+        ).replace("<properties><java.baseline>21</java.baseline></properties>", properties, 1)
+        path.write_text(text, encoding="utf-8")
+        return drift.parse_pom(path)
+
+    def test_declared_baseline_is_read(self):
+        self.assertEqual(
+            21, contract.java_baseline(self.project("<properties><java.baseline>21</java.baseline></properties>"))
+        )
+
+    def test_missing_baseline_is_fatal(self):
+        with self.assertRaises(contract.ContractViolation) as raised:
+            contract.java_baseline(self.project("<properties/>"))
+        self.assertIn("java.baseline", str(raised.exception))
+
+    def test_non_numeric_baseline_is_fatal(self):
+        with self.assertRaises(contract.ContractViolation):
+            contract.java_baseline(self.project("<properties><java.baseline>21+</java.baseline></properties>"))
+
+    def make_jar(self, entries: dict[str, int]) -> Path:
+        path = self.root / "sample.jar"
+        with zipfile.ZipFile(path, "w") as archive:
+            for name, major in entries.items():
+                archive.writestr(name, b"\xca\xfe\xba\xbe\x00\x00" + struct.pack(">H", major) + b"rest")
+        return path
+
+    def test_required_release_is_read_from_bytecode(self):
+        self.assertEqual(21, contract.required_java_release(self.make_jar({"A.class": 65})))
+
+    def test_multi_release_entries_are_ignored(self):
+        jar = self.make_jar({"A.class": 61, "META-INF/versions/21/A.class": 65})
+        self.assertEqual(17, contract.required_java_release(jar))
+
+    def test_jar_newer_than_baseline_is_a_violation(self):
+        repository = self.root / "repo"
+        jar = contract.artifact_jar(repository, UNLAXER_COMMON, "3.0.11")
+        jar.parent.mkdir(parents=True)
+        shutil.copy(self.make_jar({"A.class": 65}), jar)
+        with self.assertRaises(contract.ContractViolation) as raised:
+            contract.check_java_baseline(repository, {UNLAXER_COMMON: "3.0.11"}, [UNLAXER_COMMON], 17)
+        self.assertIn("Java 21 が必要", str(raised.exception))
+        self.assertIn("UnsupportedClassVersionError", str(raised.exception))
+
+    def test_jar_within_baseline_passes(self):
+        repository = self.root / "repo"
+        jar = contract.artifact_jar(repository, UNLAXER_COMMON, "3.0.11")
+        jar.parent.mkdir(parents=True)
+        shutil.copy(self.make_jar({"A.class": 61}), jar)
+        self.assertEqual(
+            {UNLAXER_COMMON: 17},
+            contract.check_java_baseline(repository, {UNLAXER_COMMON: "3.0.11"}, [UNLAXER_COMMON], 21),
+        )
+
+
+class RequireAllTest(unittest.TestCase):
+    def test_unverified_coordinate_fails_require_all(self):
+        with self.assertRaises(contract.ContractViolation) as raised:
+            contract.check_all_verified(
+                {UNLAXER_COMMON: "3.0.11", BUILDING_HIERARCHY: "0.19.4"}, [UNLAXER_COMMON]
+            )
+        self.assertIn("org.unlaxer:building-hierarchy", str(raised.exception))
+
+    def test_fully_verified_passes_require_all(self):
+        self.assertIsNone(
+            contract.check_all_verified({UNLAXER_COMMON: "3.0.11"}, [UNLAXER_COMMON])
+        )
 
 
 if __name__ == "__main__":

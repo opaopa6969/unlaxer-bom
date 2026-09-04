@@ -14,6 +14,10 @@ check-bom-version-drift.py が「BOM を真実として consumer の書き方を
    registry と認証に依存するため、pom.xml の `bom registry:` 宣言で対象を分ける。
    central は secret 無しで常時検証し、github は既定で「未検証」と明示的に報告する
    （黙って skip しない）。
+3. Java baseline 契約 — 解決した jar の class file version が、BOM が宣言する
+   `java.baseline` を超えていないか。compile は通るのに実行時だけ
+   UnsupportedClassVersionError で落ちる型は compile 検証では捕まらないため、
+   bytecode を直接読む。
 
 compile まで行うのは、version 文字列の比較では原理的に検出できない事故があるため。
 CHANGELOG [2026.48] の unlaxer-common 2.8.0 は GitHub Packages と Maven Central に
@@ -36,12 +40,14 @@ import os
 from pathlib import Path
 import re
 import shutil
+import struct
 import subprocess
 import sys
 import tempfile
 import urllib.error
 import urllib.request
 import xml.etree.ElementTree as ET
+import zipfile
 
 
 SCRIPT_DIRECTORY = Path(__file__).resolve().parent
@@ -63,7 +69,8 @@ CENTRAL_PROBE_URL = "https://repo.maven.apache.org/maven2/"
 # 再実行の決定性のため plugin version を固定する（既定版は Maven の版に依存するため）。
 HELP_PLUGIN = "org.apache.maven.plugins:maven-help-plugin:3.5.1"
 COMPILER_PLUGIN_VERSION = "3.13.0"
-COMPILER_RELEASE = "21"
+JAVA_BASELINE_PROPERTY = "java.baseline"
+CLASS_FILE_MAJOR_OFFSET = 44  # class file major 65 = Java 21
 
 # central 宣言の座標が提供する型を実際に触る断片。座標が central でなくなれば自動で外れる。
 CONTRACT_SNIPPETS: dict[tuple[str, str], str] = {
@@ -80,6 +87,15 @@ CONTRACT_SNIPPETS: dict[tuple[str, str], str] = {
 }
 
 # 「確かめられなかった」を「壊れている」と混同しないための分類。先に評価する。
+# 認証失敗はネットワーク障害と切り分ける（トークン切れを「registry が落ちている」と誤診しないため）。
+AUTHENTICATION_MARKERS = (
+    "status code: 401",
+    "status code: 403",
+    "Unauthorized (401)",
+    "Forbidden (403)",
+    "authentication failed",
+    "Not authorized",
+)
 UNRUNNABLE_MARKERS = (
     "offline mode",
     "Could not transfer artifact",
@@ -147,6 +163,26 @@ def registry_declarations(project: ET.Element) -> dict[tuple[str, str], str]:
     return declarations
 
 
+def check_all_pins_present(project: ET.Element, managed: dict[tuple[str, str], str]) -> None:
+    """version を失った managed dependency は、どの検査からも黙って消える。それを fatal にする。"""
+    properties = drift.project_properties(project)
+    missing: list[str] = []
+    for dependency in drift.dependency_elements(project, managed=True):
+        key = drift.coordinate(dependency, properties)
+        if key is None:
+            missing.append("  （groupId / artifactId を読めない dependency）")
+        elif drift.child_text(dependency, "version") is None:
+            missing.append(f"  {key[0]}:{key[1]}")
+    if missing:
+        raise ContractViolation(
+            "BOM の dependencyManagement に version の無い dependency があります。\n"
+            "version が無いと BOM は何も固定せず、この検査からも黙って消えます:\n"
+            + "\n".join(missing)
+        )
+    if not managed:
+        raise ContractViolation("BOM が固定している座標が 1 つもありません。")
+
+
 def classify_registries(
     managed: dict[tuple[str, str], str], declarations: dict[tuple[str, str], str]
 ) -> dict[str, list[tuple[str, str]]]:
@@ -185,6 +221,7 @@ def consumer_pom(
     bom: tuple[str, str, str],
     coordinates: list[tuple[str, str]],
     extra_repository: tuple[str, str] | None,
+    baseline: int,
 ) -> str:
     """最小 downstream consumer。BOM を import し、対象座標を version 無しで宣言する。"""
     group, artifact, version = bom
@@ -217,7 +254,7 @@ def consumer_pom(
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.release>{COMPILER_RELEASE}</maven.compiler.release>
+    <maven.compiler.release>{baseline}</maven.compiler.release>
   </properties>
 {repositories}
   <dependencyManagement>
@@ -294,6 +331,100 @@ def settings_xml(server_id: str | None) -> str:
     return f"<settings>\n{servers}</settings>\n"
 
 
+def java_baseline(project: ET.Element) -> int:
+    """BOM が宣言する Java の下限。registry 宣言と同じく fail-closed（未宣言は契約違反）。"""
+    properties = drift.project_properties(project)
+    declared = properties.get(JAVA_BASELINE_PROPERTY)
+    if declared is None:
+        raise ContractViolation(
+            f"BOM に `<{JAVA_BASELINE_PROPERTY}>` の宣言がありません。"
+            "このトレインが要求する Java の下限を pom.xml の properties に宣言してください"
+            "（解決した jar の class file version を検証するために必要）。"
+        )
+    try:
+        value = int(declared.strip())
+    except ValueError as error:
+        raise ContractViolation(
+            f"`<{JAVA_BASELINE_PROPERTY}>` は整数で宣言してください（現在: {declared!r}）"
+        ) from error
+    return value
+
+
+def required_java_release(jar: Path) -> int | None:
+    """jar の中で最も新しい class file が要求する Java feature version。
+
+    META-INF/versions/ 配下は multi-release jar の意図的な上位版なので除く
+    （古い JVM ではそもそも読まれない）。
+    """
+    highest = 0
+    try:
+        with zipfile.ZipFile(jar) as archive:
+            for name in archive.namelist():
+                if not name.endswith(".class") or name.startswith("META-INF/versions/"):
+                    continue
+                header = archive.read(name)[:8]
+                if len(header) < 8:
+                    continue
+                highest = max(highest, struct.unpack(">H", header[6:8])[0])
+    except (zipfile.BadZipFile, OSError):
+        return None
+    return highest - CLASS_FILE_MAJOR_OFFSET if highest else None
+
+
+def artifact_jar(repo_local: Path, coordinate: tuple[str, str], version: str) -> Path:
+    group, artifact = coordinate
+    return repo_local.joinpath(*group.split("."), artifact, version, f"{artifact}-{version}.jar")
+
+
+def check_java_baseline(
+    repo_local: Path,
+    managed: dict[tuple[str, str], str],
+    targets: list[tuple[str, str]],
+    baseline: int,
+) -> dict[tuple[str, str], int]:
+    """解決済み jar の class file version が baseline を超えていないか実測する。"""
+    measured: dict[tuple[str, str], int] = {}
+    problems: list[str] = []
+    for key in targets:
+        version = managed[key]
+        jar = artifact_jar(repo_local, key, version)
+        if not jar.is_file():
+            continue  # pom のみの artifact（BOM 等）は検証対象にならない
+        required = required_java_release(jar)
+        if required is None:
+            continue
+        measured[key] = required
+        if required > baseline:
+            problems.append(
+                f"  {key[0]}:{key[1]}:{version}: Java {required} が必要"
+                f"（BOM 宣言の下限は Java {baseline}）"
+            )
+    if problems:
+        raise ContractViolation(
+            f"BOM が固定した artifact が、宣言した Java {baseline} では実行できません。\n"
+            "compile は通っても実行時に UnsupportedClassVersionError になります:\n"
+            + "\n".join(problems)
+            + f"\n\n`<{JAVA_BASELINE_PROPERTY}>` を上げるか、その Java で動く版に pin し直してください。"
+        )
+    return measured
+
+
+def check_all_verified(
+    managed: dict[tuple[str, str], str], targets: list[tuple[str, str]]
+) -> None:
+    """release 前の完全検証。未検証が 1 つでも残れば契約は成立していないとみなす。"""
+    unverified = sorted(set(managed) - set(targets))
+    if not unverified:
+        return
+    listed = "\n".join(f"  {group}:{artifact}" for group, artifact in unverified)
+    raise ContractViolation(
+        "--require-all が指定されましたが、resolve を検証できていない座標が残っています。\n"
+        "この状態では、pin が実在しなくてもこの実行では検出できません:\n"
+        f"{listed}\n\n"
+        "GH_PKG_USER / GH_PKG_TOKEN を設定して --include-github を併用してください。"
+    )
+
+
 def maven_executable() -> str:
     executable = shutil.which("mvn")
     if executable is None:
@@ -326,8 +457,14 @@ def maven_failure(action: str, output: str) -> Exception:
     )[-4000:]
     if not tail:
         tail = output[-2000:]
+    if any(marker in output for marker in AUTHENTICATION_MARKERS):
+        return Unrunnable(
+            f"{action} を完了できませんでした（**認証**の問題。registry が 401/403 を返しています）。\n"
+            "GH_PKG_USER / GH_PKG_TOKEN と、トークンの read:packages スコープを確認してください:\n"
+            f"{tail}"
+        )
     if any(marker in output for marker in UNRUNNABLE_MARKERS):
-        return Unrunnable(f"{action} を完了できませんでした（ネットワーク・認証・環境の問題）:\n{tail}")
+        return Unrunnable(f"{action} を完了できませんでした（ネットワークまたは環境の問題）:\n{tail}")
     return ContractViolation(f"{action} が失敗しました:\n{tail}")
 
 
@@ -417,29 +554,58 @@ def require_github_credentials() -> None:
 def render(
     managed: dict[tuple[str, str], str],
     verified: set[tuple[str, str]],
+    baseline: int,
+    measured: dict[tuple[str, str], int],
 ) -> str:
     names = {key: f"{key[0]}:{key[1]}" for key in managed}
     width = max(len(name) for name in names.values())
     pin_width = max(len(pin) for pin in managed.values())
     lines = [
-        f"{'座標'.ljust(width)}  {'pin'.ljust(pin_width)}  injection  resolution",
+        f"{'座標'.ljust(width)}  {'pin'.ljust(pin_width)}  injection  java  resolution",
     ]
     for key in sorted(managed):
         if key in verified:
             resolution = "OK (central: resolve + compile)"
         else:
             resolution = "UNVERIFIED (github packages / 認証が必要)"
-        lines.append(f"{names[key].ljust(width)}  {managed[key].ljust(pin_width)}  OK         {resolution}")
+        java = f"{measured[key]:>4}" if key in measured else "   -"
+        lines.append(
+            f"{names[key].ljust(width)}  {managed[key].ljust(pin_width)}  OK         {java}  {resolution}"
+        )
+    unverified = len(managed) - len(verified)
+    lines.append("")
+    if unverified:
+        # exit 0 を「全部確かめた」と読ませない。未検証が残る限り、そこは無防備。
+        lines.append(
+            f"**部分検証**: injection {len(managed)}/{len(managed)}、"
+            f"resolution + compile {len(verified)}/{len(managed)}。"
+            f"残り {unverified} 座標は未検証。"
+        )
+        lines.append(
+            f"→ この {unverified} 座標は、**pin が実在しなくてもこの実行では検出できない**。"
+        )
+        lines.append(
+            "→ release 前に GH_PKG_USER / GH_PKG_TOKEN を設定し "
+            "`--include-github --require-all` で全座標を検証すること。"
+        )
+    else:
+        lines.append(
+            f"全座標検証: injection {len(managed)}/{len(managed)}、"
+            f"resolution + compile {len(managed)}/{len(managed)}。"
+        )
+    highest = max(measured.values(), default=None)
+    if highest is None:
+        lines.append(f"Java baseline: 宣言 {baseline}（class file を検証できた jar なし）")
+    else:
+        lines.append(
+            f"Java baseline: 宣言 {baseline} / 検証した jar の実測最大 {highest}"
+            "（この下限より古い JVM では実行時に UnsupportedClassVersionError になる）"
+        )
     lines.append("")
     lines.append(
-        f"契約成立: injection {len(managed)}/{len(managed)}、"
-        f"resolution {len(verified)}/{len(managed)} 検証済み・"
-        f"{len(managed) - len(verified)} 未検証(github packages)"
+        "この検証が保証しないこと: pin が「トレインとして意図した版」であること。"
+        "実在して使えることまでしか見ていないため、実在する別版への打ち間違いは通る。"
     )
-    if len(verified) != len(managed):
-        lines.append(
-            "未検証の座標は GH_PKG_USER / GH_PKG_TOKEN を設定して --include-github で検証できます。"
-        )
     return "\n".join(lines)
 
 
@@ -449,12 +615,15 @@ def verify(
     workspace: Path,
     repo_local: Path,
     include_github: bool,
+    require_all: bool,
     timeout: float,
 ) -> str:
     project = drift.parse_pom(bom_path)
     bom = bom_identity(project)
     managed = drift.managed_versions(bom_path)
+    check_all_pins_present(project, managed)
     buckets = classify_registries(managed, registry_declarations(project))
+    baseline = java_baseline(project)
 
     server_id = None
     extra_repository = None
@@ -486,7 +655,7 @@ def verify(
     source = consumer / "src" / "main" / "java"
     source.mkdir(parents=True, exist_ok=True)
     (consumer / "pom.xml").write_text(
-        consumer_pom(bom, targets, extra_repository), encoding="utf-8"
+        consumer_pom(bom, targets, extra_repository, baseline), encoding="utf-8"
     )
     (source / "BomConsumerContract.java").write_text(contract_source(targets), encoding="utf-8")
 
@@ -506,7 +675,28 @@ def verify(
     if code != 0:
         raise maven_failure("consumer の resolve + compile", output)
 
-    return render(managed, set(targets))
+    measured = check_java_baseline(repo_local, managed, targets, baseline)
+
+    if require_all:
+        check_all_verified(managed, targets)
+
+    return render(managed, set(targets), baseline, measured)
+
+
+def remove_workspace(workspace: Path) -> None:
+    """後始末の失敗を黙って握りつぶさない（残骸の場所を必ず知らせる）。"""
+    errors: list[str] = []
+
+    def record(_function, path, exception):
+        errors.append(f"{path}: {exception[1] if isinstance(exception, tuple) else exception}")
+
+    shutil.rmtree(workspace, onerror=record)
+    if workspace.exists() or errors:
+        detail = ("\n  " + "\n  ".join(errors[:5])) if errors else ""
+        print(
+            f"一時ディレクトリを削除できませんでした。手で消してください: {workspace}{detail}",
+            file=sys.stderr,
+        )
 
 
 def main() -> int:
@@ -520,6 +710,10 @@ def main() -> int:
     parser.add_argument(
         "--include-github", action="store_true",
         help="GitHub Packages の座標も検証する（GH_PKG_USER / GH_PKG_TOKEN が必要）",
+    )
+    parser.add_argument(
+        "--require-all", action="store_true",
+        help="未検証の座標が 1 つでも残れば契約違反にする（release 前の完全検証用）",
     )
     parser.add_argument("--timeout", type=float, default=15.0, help="Maven Central 到達確認の秒数")
     arguments = parser.parse_args()
@@ -540,13 +734,14 @@ def main() -> int:
                 workspace=workspace,
                 repo_local=repo_local,
                 include_github=arguments.include_github,
+                require_all=arguments.require_all,
                 timeout=arguments.timeout,
             ))
         finally:
             if arguments.keep:
                 print(f"\n生成物を残しました: {workspace}", file=sys.stderr)
             else:
-                shutil.rmtree(workspace, ignore_errors=True)
+                remove_workspace(workspace)
         return 0
     except (ContractViolation, PomError) as error:
         # PomError（POM を読めない / pin の property を解決できない）は BOM 自身の欠陥であり、

@@ -20,6 +20,12 @@
     <url>https://github.com/opaopa6969/unlaxer-bom</url>
 
     <properties>
+        <!-- このトレインが要求する Java の下限。import scope では property は継承されないため、
+             consumer への影響は無い（このトレインのメタデータであり、検証と README の根拠）。
+             scripts/verify-bom-consumer-contract.py が、解決した jar の class file version が
+             この下限を超えていないかを実測で検証する。compile は通るのに実行時だけ
+             UnsupportedClassVersionError で落ちる型は、compile 検証では捕まらないため。 -->
+        <java.baseline>21</java.baseline>
         <!-- このトレインの構成バージョン。CHANGELOG.md の同名トレインと一致させること。 -->
         <unlaxer-common.version>3.0.11</unlaxer-common.version>
         <japanese-parser-common.version>0.3.6</japanese-parser-common.version>
