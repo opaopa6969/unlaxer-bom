@@ -47,6 +47,11 @@
         </repository>
     </distributionManagement>
 
+    <!-- 各 dependency に付く "bom registry: central|github" コメントは、その pin がどの registry から
+         取れるかの宣言。scripts/verify-bom-consumer-contract.py が pin の実解決を検証するときに使う。
+         central = Maven Central にある（secret 不要なので CI が常時 resolve + compile まで検証する）。
+         github  = GitHub Packages のみ（read:packages 認証が要るため、既定では未検証として報告する）。
+         宣言の無い座標は検証が fatal になる。座標を足すときは必ず宣言すること。 -->
     <dependencyManagement>
         <dependencies>
             <!-- 全リポ共通基盤。トレイン内で厳密統一を強制する唯一の artifact（1.1.26/2.8.0 事故の再発防止）。 -->
@@ -54,6 +59,7 @@
                 <groupId>org.unlaxer</groupId>
                 <artifactId>unlaxer-common</artifactId>
                 <version>${unlaxer-common.version}</version>
+                <!-- bom registry: central -->
             </dependency>
             <!-- 日本語住所テキスト処理共通(文字種/CodePoint モデル・正規化・tokenizer・translator核)。
                  onigiri-parser から抽出し onigiri / abr-utils が共有。 -->
@@ -61,42 +67,49 @@
                 <groupId>org.unlaxer</groupId>
                 <artifactId>japanese-parser-common</artifactId>
                 <version>${japanese-parser-common.version}</version>
+                <!-- bom registry: github -->
             </dependency>
             <!-- 住所→建物階層パーサー。 -->
             <dependency>
                 <groupId>org.unlaxer</groupId>
                 <artifactId>building-hierarchy</artifactId>
                 <version>${building-hierarchy.version}</version>
+                <!-- bom registry: github -->
             </dependency>
             <!-- ABRUtils（住所検索本体・作法の基準）。groupId は org.unlaxer.geo。 -->
             <dependency>
                 <groupId>org.unlaxer.geo</groupId>
                 <artifactId>abr-utils</artifactId>
                 <version>${abr-utils.version}</version>
+                <!-- bom registry: github -->
             </dependency>
             <!-- onigiri 住所パーサー。 -->
             <dependency>
                 <groupId>org.unlaxer</groupId>
                 <artifactId>onigiri-parser</artifactId>
                 <version>${onigiri-parser.version}</version>
+                <!-- bom registry: github -->
             </dependency>
             <!-- 歴史地名辞書(町名照合失敗時の字消費 fallback。onigiri 0.9.11 が利用)。 -->
             <dependency>
                 <groupId>org.unlaxer</groupId>
                 <artifactId>historical-town-names</artifactId>
                 <version>${historical-town-names.version}</version>
+                <!-- bom registry: github -->
             </dependency>
             <!-- 自治体統廃合履歴(historical-town-names の依存)。 -->
             <dependency>
                 <groupId>org.unlaxer</groupId>
                 <artifactId>municipality-history</artifactId>
                 <version>${municipality-history.version}</version>
+                <!-- bom registry: github -->
             </dependency>
             <!-- 時系列郵便番号辞書(municipality-history 連携・PostcodeWithContext が利用)。 -->
             <dependency>
                 <groupId>org.unlaxer</groupId>
                 <artifactId>japanpost-history</artifactId>
                 <version>${japanpost-history.version}</version>
+                <!-- bom registry: github -->
             </dependency>
 
             <!-- ▼ 検証済み 3rdパーティ（doma / flyway）。各 rdb 実装・consumer はここで版が揃う。 -->
@@ -105,22 +118,26 @@
                 <groupId>org.seasar.doma</groupId>
                 <artifactId>doma-core</artifactId>
                 <version>${doma.version}</version>
+                <!-- bom registry: central -->
             </dependency>
             <dependency>
                 <groupId>org.seasar.doma</groupId>
                 <artifactId>doma-processor</artifactId>
                 <version>${doma.version}</version>
+                <!-- bom registry: central -->
             </dependency>
             <!-- Flyway: スキーマ migration。 -->
             <dependency>
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-core</artifactId>
                 <version>${flyway.version}</version>
+                <!-- bom registry: central -->
             </dependency>
             <dependency>
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-database-postgresql</artifactId>
                 <version>${flyway.version}</version>
+                <!-- bom registry: central -->
             </dependency>
 
             <!-- Phase 1 で jaddress-rdb-api（port）を追加予定。公開後に下記を有効化:

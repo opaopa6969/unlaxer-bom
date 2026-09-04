@@ -96,6 +96,65 @@ python3 unlaxer-bom/scripts/check-bom-version-drift.py \
 consumer repo へ展開するときも、判定を緩めた別実装を作らずこの checker を基準にする。
 consumer の pre-commit / hook から使う場合は `--bom /path/to/unlaxer-bom/pom.xml` を渡せる。
 
+### BOM の pin が実際に解決でき compile できるか検証する
+
+`scripts/verify-bom-consumer-contract.py` は、BOM の**中核契約**を実行可能にする。
+
+> **BOM の pin は、実際に解決でき、使える。**
+
+BOM を隔離した Maven local repository に install し、それを `<scope>import</scope>` する
+**最小 downstream consumer を実際に build** して確かめる（`~/.m2` は読まない・書かない）。
+
+```bash
+python3 scripts/verify-bom-consumer-contract.py
+```
+
+検証は 2 軸に分かれる。
+
+1. **injection** — import した consumer に pin が注入されるか。第三者 artifact を1つも落とさずに
+   **全座標**を検証する
+2. **resolution + compile** — pin が実在して resolve でき、その jar に対して compile が通るか
+
+**compile まで行うのは、version 文字列の比較では検出できない事故があるため。**
+CHANGELOG `[2026.48]` の `unlaxer-common:2.8.0` は GitHub Packages と Maven Central に
+同じ座標で中身違いで存在し、Central 側に `CodePointIndex.of` / `ZERO` が無かった。
+resolve は成功して compile だけが落ちる型で、ここでだけ捕まる。
+
+| exit | 意味 |
+|------|------|
+| 0 | 契約成立 |
+| 1 | 契約違反（pin が注入されない / resolve・compile 失敗 / `bom registry` 宣言の不備） |
+| 2 | 確かめられなかった（Java・Maven 不在、Maven Central へ到達不可） |
+
+「壊れている」と「確かめられなかった」を混同しない。どちらも CI は失敗する。
+
+#### `bom registry` 宣言
+
+`pom.xml` の各 `dependency` には、その pin がどの registry から取れるかの宣言を置く。
+
+```xml
+<dependency>
+  <groupId>org.unlaxer</groupId>
+  <artifactId>unlaxer-common</artifactId>
+  <version>${unlaxer-common.version}</version>
+  <!-- bom registry: central -->
+</dependency>
+```
+
+- `central` — Maven Central にある。**secret 不要**なので CI が常時 resolve + compile まで検証する
+- `github` — GitHub Packages のみ。`read:packages` 認証が要るため、既定では
+  **`UNVERIFIED` として座標ごとに列挙**する（黙って skip しない）
+
+**宣言の無い座標があると検証は fatal で落ちる。** BOM に座標を足すときは必ず宣言すること。
+現在の内訳（`central` 5 / `github` 7）はスクリプトの出力がそのまま表になる。
+
+認証を持っている環境でなら、GitHub Packages 側も検証できる。トークンは引数では受け取らない。
+
+```bash
+GH_PKG_USER=<user> GH_PKG_TOKEN=<read:packages トークン> \
+  python3 scripts/verify-bom-consumer-contract.py --include-github
+```
+
 ## 配置
 
 Maven Central 未公開。ローカルでは `mvn install` で各 .m2 に配置:
