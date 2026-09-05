@@ -1,7 +1,12 @@
 name: CI
 
-# BOM は pom-only。整合性（pom の妥当性 + dependencyManagement の解決可否）を検証する。
-# auth は不要 — validate は private registry に触れない。
+# BOM は pom-only。次の 3 つを検証する。
+#   1. pom の妥当性（mvn -N validate。model の検証だけで、依存の解決は行わない）
+#   2. consumer POM の明示 version が BOM pin から drift していないこと（静的な突き合わせ）
+#   3. BOM の pin が実際に downstream consumer で成立すること
+#      （BOM を隔離 local repository に install し、それを import する最小 consumer を実 build する。
+#        injection は全座標、resolve + compile は `bom registry: central` の座標が対象）
+# auth は不要 — `bom registry: github` の座標は「未検証」と明示的に報告し、CI では解決を試みない。
 
 on:
   push:
@@ -27,7 +32,13 @@ jobs:
       - name: Validate BOM pom
         run: mvn -B -N validate
 
-      - name: Test BOM version drift checker
-        run: |
-          python3 -m unittest discover -s tests -v
-          python3 scripts/check-bom-version-drift.py --bom pom.xml pom.xml
+      - name: Test BOM checkers
+        run: python3 -m unittest discover -s tests -v
+
+      - name: Check consumer version drift
+        run: python3 scripts/check-bom-version-drift.py --bom pom.xml pom.xml
+
+      # BOM の中核契約: import した pin が実際に注入され、解決でき、compile できるか。
+      # exit 1 = 契約違反、exit 2 = 確かめられなかった（どちらも step は失敗する）。
+      - name: Verify BOM consumer contract
+        run: python3 scripts/verify-bom-consumer-contract.py

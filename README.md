@@ -39,6 +39,66 @@ vacant 製品群の **共通 BOM（検証済みバージョンセット / Bill o
 </dependencies>
 ```
 
+> **これだけでは resolve できない座標がある。** BOM が固定する 12 座標のうち
+> **Maven Central にあるのは 5 つだけ**で、残り 7 つ（上の例の `building-hierarchy` を含む）は
+> **GitHub Packages にしか無く `read:packages` 認証が要る**。認証が無いと Maven は
+> `Could not find artifact ... in central` としか言わず、401 と 404 を区別しない。
+> どの座標がどちらかは `pom.xml` の `bom registry:` 宣言か、
+> [検証スクリプトの出力](#bom-の-pin-が実際に解決でき-compile-できるか検証する)で確認できる。
+
+#### GitHub Packages 側の座標を使うには
+
+consumer の POM に repository を足し、`read:packages` を持つトークンを settings.xml に置く。
+**`<id>` が両方で一致していないと Maven は資格情報を送らない**（無言で 401 → 「見つからない」になる）。
+
+```xml
+<!-- consumer の pom.xml -->
+<repositories>
+  <repository>
+    <id>github-unlaxer</id>
+    <url>https://maven.pkg.github.com/opaopa6969/unlaxer-bom</url>
+  </repository>
+</repositories>
+```
+
+```xml
+<!-- ~/.m2/settings.xml（コミットしない） -->
+<settings>
+  <servers>
+    <server>
+      <id>github-unlaxer</id>
+      <username>あなたの GitHub ユーザー名</username>
+      <password>${env.GH_PKG_TOKEN}</password>
+    </server>
+  </servers>
+</settings>
+```
+
+```bash
+GH_PKG_TOKEN=<read:packages トークン> mvn compile
+```
+
+`<password>` に実値を書かず `${env.GH_PKG_TOKEN}` にしておくと、トークンがディスクに残らない。
+逆に、**この `<id>` を持つ `<server>` が既に settings.xml にあると、意図しないトークンが
+送られることがある**（Maven は id の文字列一致だけで選ぶ）。
+
+### 動作要件
+
+| | 要件 | 根拠 |
+|---|------|------|
+| Java | **21 以上** | `pom.xml` の `<java.baseline>`。`unlaxer-common:3.0.11` の class file version が 65（= Java 21）。doma / flyway は 17 だが、トレイン全体の下限は 21 |
+| Maven | 3.9 系で検証（BOM の import scope 自体は 3.x 全般で動く） | CI と開発環境 |
+
+Java 21 未満だとどうなるかは、**どこで compile したか**で変わる（いずれも実測）。
+
+- JDK 21 未満で **直接 compile** すると、その場で落ちる:
+  `bad class file: ... class file has wrong version 65.0, should be 61.0`
+- JDK 21 で compile したものを **JDK 21 未満で実行**すると、実行時にだけ落ちる:
+  `UnsupportedClassVersionError: ... class file version 65.0 ... only recognizes ... up to 61.0`
+
+危ないのは後者（build machine と実行環境が違う場合）。この下限は宣言値を信じるのではなく、
+解決した jar の bytecode を実測して検証している（下記スクリプト）。
+
 ## 現在のトレイン: `2026.53`
 
 | artifact | groupId | version | 備考 |
@@ -95,6 +155,123 @@ python3 unlaxer-bom/scripts/check-bom-version-drift.py \
 
 consumer repo へ展開するときも、判定を緩めた別実装を作らずこの checker を基準にする。
 consumer の pre-commit / hook から使う場合は `--bom /path/to/unlaxer-bom/pom.xml` を渡せる。
+
+### BOM の pin が実際に解決でき compile できるか検証する
+
+`scripts/verify-bom-consumer-contract.py` は、BOM の**中核契約**を実行可能にする。
+
+> **BOM の pin は、実際に解決でき、使える。**
+
+BOM を隔離した Maven local repository に install し、それを `<scope>import</scope>` する
+**最小 downstream consumer を実際に build** して確かめる（`~/.m2` は読まない・書かない）。
+
+```bash
+python3 scripts/verify-bom-consumer-contract.py
+```
+
+検証は 2 軸に分かれる。
+
+1. **injection** — import した consumer に pin が注入されるか。第三者 artifact を1つも落とさずに
+   **全座標**を検証する
+2. **resolution + compile** — pin が実在して resolve でき、その jar に対して compile が通るか
+
+**compile まで行うのは、version 文字列の比較では検出できない事故があるため。**
+CHANGELOG `[2026.48]` の `unlaxer-common:2.8.0` は GitHub Packages と Maven Central に
+同じ座標で中身違いで存在し、Central 側に `CodePointIndex.of` / `ZERO` が無かった。
+resolve は成功して compile だけが落ちる型で、ここでだけ捕まる。
+
+| exit | 意味 |
+|------|------|
+| 0 | 契約成立 |
+| 1 | 契約違反（pin が注入されない / resolve・compile 失敗 / `bom registry` 宣言の不備 /
+       BOM を読めない・pin の property を解決できない） |
+| 2 | 確かめられなかった（Java・Maven 不在、Maven Central へ到達不可）。**環境の問題だけ** |
+
+「壊れている」と「確かめられなかった」を混同しない。どちらも CI は失敗する。
+
+#### `bom registry` 宣言
+
+`pom.xml` の各 `dependency` には、その pin がどの registry から取れるかの宣言を置く。
+
+```xml
+<dependency>
+  <groupId>org.unlaxer</groupId>
+  <artifactId>unlaxer-common</artifactId>
+  <version>${unlaxer-common.version}</version>
+  <!-- bom registry: central -->
+</dependency>
+```
+
+- `central` — Maven Central にある。**secret 不要**なので CI が常時 resolve + compile まで検証する
+- `github` — GitHub Packages のみ。`read:packages` 認証が要るため、既定では
+  **`UNVERIFIED` として座標ごとに列挙**する（黙って skip しない）
+
+**宣言の無い座標があると検証は fatal で落ちる。** BOM に座標を足すときは必ず宣言すること。
+現在の内訳（`central` 5 / `github` 7）はスクリプトの出力がそのまま表になる。
+
+認証を持っている環境でなら、GitHub Packages 側も検証できる。トークンは引数では受け取らない。
+
+```bash
+GH_PKG_USER=<user> GH_PKG_TOKEN=<read:packages トークン> \
+  python3 scripts/verify-bom-consumer-contract.py --include-github
+```
+
+#### release 前は `--require-all` で全座標を要求する
+
+**PR の CI は secret を持たないため 12 座標中 5 座標しか resolve を確かめられない。**
+GitHub Packages 側の pin が架空でも、その実行は「部分検証」として exit 0 になる。
+出力は未検証座標を必ず列挙するが、**exit 0 を「全部確かめた」と読んではいけない**。
+
+そのため release 時（`.github/workflows/publish.yml`）は deploy の前に
+`--include-github --require-all` を通す。未検証が 1 つでも残れば exit 1 で publish しない。
+
+```bash
+GH_PKG_USER=<user> GH_PKG_TOKEN=<read:packages トークン> \
+  python3 scripts/verify-bom-consumer-contract.py --include-github --require-all
+```
+
+#### この検証が保証しないこと
+
+- **pin が「トレインとして意図した版」であること**は保証しない。実在して使えることまでしか見ない。
+  `12.1.0` を `11.8.2` と打ち間違えても、その版が実在すれば通る。
+  トレインの意図との突き合わせは現在 `CHANGELOG.md` / `history/` の人手レビューが担う（issue #10）
+- **consumer が明示 version を書いたら BOM は負ける。** Maven の仕様で、明示指定は import した
+  pin に無条件で勝ち、警告も出ない。これを防ぐのは `check-bom-version-drift.py` だけで、
+  consumer repo 側で hook / CI に組み込まない限り機構としては何も強制されない
+- **`java.baseline` は consumer に伝播しない。** import scope が運ぶのは dependencyManagement だけで
+  property は運ばれない。consumer 側の `maven.compiler.release` が低くても Maven は何も言わない
+  （依存 jar の bytecode 版数を見ないため）。ここで検証しているのは
+  「BOM が固定した jar が、宣言した下限で動くか」であって consumer の設定ではない
+- consumer repo の POM は見ない。それは `check-bom-version-drift.py` の担当
+
+#### 第三者が採用するときの判断
+
+`bom registry: github` の 7 座標（unlaxer 製品本体）は、**認証を持たない第三者には
+resolve を再現できない**。PR の CI も secret を持たないため証明しない。
+選べるのは次のどちらかで、どちらを取るかは採用側が明示的に決めること。
+
+1. 自分で `read:packages` トークンを用意し、`--include-github --require-all` を自分でも回す
+2. release 時の publish ワークフロー（deploy 前に `--require-all` を通す）の green を信頼材料として受け入れる
+
+#### 2 つのスクリプトの exit code の違い
+
+未解決 property のような「POM を読めない」系のエラーで、
+`check-bom-version-drift.py` は **2**、`verify-bom-consumer-contract.py` は **1** を返す。
+前者の 2 は Claude Code の PreToolUse hook で編集を止めるための値であり、意図的に変えていない。
+両方を1つの自動化から呼ぶ場合は「非 0 なら失敗」で扱うこと。
+
+#### 実行時の注意
+
+- 作業用ディレクトリは `tempfile` 既定（`TMPDIR` があればそこ）に作られ、終了時に消える。
+  **場所は生成した時点で stderr に出す**（強制終了されて後始末が走らなくても分かるように）。
+  消せなかった場合も場所を出す
+- **offline 挙動を試すときは `mvn -o` か `settings.xml` の `<proxy>` を使う。**
+  `MAVEN_OPTS` の `-Dhttp.proxyHost` は Maven の resolver に効かず、
+  「offline を試したつもりで実際は通信していた」という誤解を生む
+- consumer 側で `<repository><id>github-unlaxer</id>` を書くと、Maven は同じ id を持つ
+  `~/.m2/settings.xml` の `<server>` を**文字列一致だけ**で選び、そのトークンを送る。
+  意図しない資格情報が使われないか確認すること。この検証スクリプト自身は
+  毎回隔離した `settings.xml` を生成してこの経路を断っている
 
 ## 配置
 

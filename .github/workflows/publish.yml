@@ -46,5 +46,15 @@ jobs:
           </settings>
           EOF
 
+      # release 前の完全検証。PR の CI は secret を持たないため 12 座標中 5 座標しか
+      # resolve を確かめられず、GitHub Packages 側の pin が架空でも green になる。
+      # ここは write:packages トークン（read も含む）を持つので --require-all で全座標を要求する。
+      # 失敗したら publish しない。トークンに read:packages が無い場合もここで止まる（fail-closed）。
+      - name: Verify BOM consumer contract (all coordinates)
+        env:
+          GH_PKG_USER: ${{ github.repository_owner }}
+          GH_PKG_TOKEN: ${{ secrets.PACKAGES_PUBLISH_TOKEN }}
+        run: python3 scripts/verify-bom-consumer-contract.py --include-github --require-all
+
       - name: Deploy BOM to GitHub Packages
         run: mvn -B -N deploy
