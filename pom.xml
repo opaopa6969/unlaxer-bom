@@ -31,7 +31,7 @@
         <japanese-parser-common.version>0.3.6</japanese-parser-common.version>
         <building-hierarchy.version>0.19.4</building-hierarchy.version>
         <abr-utils.version>0.10.12</abr-utils.version>
-        <onigiri-parser.version>0.9.30</onigiri-parser.version>
+        <onigiri-parser.version>0.9.31</onigiri-parser.version>
         <!-- 歴史地名辞書(町名照合失敗時の字消費 fallback)とその依存(自治体統廃合履歴)。onigiri 0.9.11 が利用。 -->
         <historical-town-names.version>0.1.0</historical-town-names.version>
         <municipality-history.version>1.0.2</municipality-history.version>
