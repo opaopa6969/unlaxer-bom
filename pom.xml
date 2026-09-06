@@ -29,11 +29,7 @@
         <!-- このトレインの構成バージョン。CHANGELOG.md の同名トレインと一致させること。 -->
         <unlaxer-common.version>3.0.11</unlaxer-common.version>
         <japanese-parser-common.version>0.3.6</japanese-parser-common.version>
-        <!-- 0.19.2〜0.19.4 は GitHub Packages へ publish されていない（building-hierarchy repo に
-             secret PACKAGES_PUBLISH_TOKEN が無く、publish workflow が 2026-08-02 以降ずっと
-             ガードで停止している）。BOM が解決できない版を指すと consumer 契約検証で落ちるので、
-             registry に実在する 0.19.1 を指す。secret が入って 0.19.4 が publish されたら上げ直すこと。 -->
-        <building-hierarchy.version>0.19.1</building-hierarchy.version>
+        <building-hierarchy.version>0.19.4</building-hierarchy.version>
         <abr-utils.version>0.10.12</abr-utils.version>
         <onigiri-parser.version>0.9.31</onigiri-parser.version>
         <!-- 歴史地名辞書(町名照合失敗時の字消費 fallback)とその依存(自治体統廃合履歴)。onigiri 0.9.11 が利用。 -->
