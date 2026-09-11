@@ -18,7 +18,8 @@ permissions:
 
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, Linux, X64, unlaxer-bom-ci]
     steps:
       - uses: actions/checkout@v4
 
@@ -27,7 +28,6 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-          cache: maven
 
       - name: Validate BOM pom
         run: mvn -B -N validate
