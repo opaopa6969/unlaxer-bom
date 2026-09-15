@@ -6,6 +6,20 @@
 
 > 各トレインごとの履歴ファイル（新しい順）は [history/INDEX.md](history/INDEX.md) を参照。
 
+## [2026.56] - 2026-09-15
+
+> 変更: **onigiri-parser 0.9.31 → 0.9.32、abr-utils 0.10.12 → 0.10.13**（他は 2026.55 のまま）。
+>
+> - `org.unlaxer:onigiri-parser:0.9.32` — 「番-号-部屋 建物名」（部屋番号が先・建物名が後。caulis/vacant-service#200）の
+>   派生形を修正: 枝番の suffix「号」を消費し「103号 建物名」の建物側に「号」を残さない、建物名が数字で終わる
+>   「…-103 埼玉ハイム2」で 103 を枝番に落とさない（onigiri-parser#188）。abr-utils 0.10.13 に追従。
+>   全テスト 494 件 green（既知の surefire 除外 2 件は変更前から）。
+> - `org.unlaxer.geo:abr-utils:0.10.13` — V6.3/V6.4 codec の 3 バイトトークン復号（`+` が `|` より先に評価され辞書 index
+>   65,536 以上の語が別語に化ける。ABRUtils#79 = #90）を develop 系統へ移植（#121）。snapshot の residential/parcel 層を
+>   読む機能（umeboshi の ABR 実在判定・ikura の住居表示実在辞書）に効く。`RsdtGoExporter` 追加（#122）。
+> - BOM 自身のバージョンは 2026.55 → 2026.56。
+> - 根拠: onigiri-parser release PR #189、ABRUtils #123（0.10.13）。
+
 ## [2026.53] - 2026-08-24
 
 > 変更: **japanpost-history 1.2.1 → 1.3.0**（他は 2026.52 のまま）。
