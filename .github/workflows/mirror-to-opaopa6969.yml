@@ -1,0 +1,56 @@
+# caulis/unlaxer-bom への push を opaopa6969/unlaxer-bom へ同期する（multi-remote 運用）。
+#
+# - 正は caulis。ここに push（PR の merge を含む）されたブランチ・タグを、そのまま opaopa6969 へ fast-forward で push する。
+# - force はしない。opaopa6969 側だけに別のコミットがある（非 fast-forward）ときは失敗して赤くなるので、
+#   手で取り込んでから再実行する（Actions の Re-run か、workflow_dispatch）。
+# - 認証は opaopa6969/unlaxer-bom の書き込み用 Deploy Key。秘密鍵は secrets.MIRROR_SSH_KEY。
+# - ブランチ削除は同期しない（消したいときは opaopa6969 側で手動）。
+name: Mirror to opaopa6969
+
+on:
+  push:
+    branches: [ '**' ]
+    tags: [ '**' ]
+  workflow_dispatch:
+
+concurrency:
+  group: mirror-to-opaopa6969
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  mirror:
+    name: Push to opaopa6969/unlaxer-bom (ff only)
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || !github.event.deleted }}
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push ref to mirror
+        env:
+          MIRROR_SSH_KEY: ${{ secrets.MIRROR_SSH_KEY }}
+          REF: ${{ github.ref }}
+          SHA: ${{ github.sha }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -eu
+          if [ -z "${MIRROR_SSH_KEY:-}" ]; then
+            echo "MIRROR_SSH_KEY が未設定のため同期は skip"; exit 0
+          fi
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$MIRROR_SSH_KEY" > ~/.ssh/mirror_key && chmod 600 ~/.ssh/mirror_key
+          ssh-keyscan -t ed25519,rsa github.com >> ~/.ssh/known_hosts 2>/dev/null
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/mirror_key -o IdentitiesOnly=yes"
+          git remote add mirror git@github.com:opaopa6969/unlaxer-bom.git
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            # 手動: 全ブランチとタグを ff で送る
+            git push mirror 'refs/remotes/origin/*:refs/heads/*' 'refs/tags/*:refs/tags/*'
+          else
+            git push mirror "$SHA:$REF"
+          fi
+          echo "mirrored $REF ($SHA) -> opaopa6969/unlaxer-bom"
