@@ -23,7 +23,7 @@ permissions:
 jobs:
   mirror:
     name: Push to opaopa6969/unlaxer-bom (ff only)
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, unlaxer-bom-ci]
     if: ${{ github.event_name == 'workflow_dispatch' || !github.event.deleted }}
     steps:
       - name: Checkout (full history)
