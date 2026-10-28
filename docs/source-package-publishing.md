@@ -47,6 +47,8 @@ Secret が未配布なら dry-run も失敗します。実公開が無効のま�
 
 公開用 checkout の POM に `central-publishing-maven-plugin` があれば、profile 内を含めて取り除きます。この拡張は deploy lifecycle を置き換えるため、GitHub 向けには標準 `maven-deploy-plugin` だけを使います。変更は一時 checkout に限られ、元のソース repo の Maven Central 公開設定は維持します。
 
+旧 `japanpost-history` が `municipality-history:1.0.0` を直接指定している場合は、同じ caulis ソース履歴の `local-repo/` にある元の jar / POM を使います。[補完版との API 差](municipality-history-1.0.0-bootstrap.md) があるためです。既知の SHA-256 と一致する2ファイルだけを実行ごとの Maven cache に install し、`bundledDependencies` に由来を記録します。不在・改変時は停止します。この依存自体を registry に再公開することはありません。新しいソースが使う 1.0.2 は通常どおり同一 owner の Packages から取得します。
+
 各 Maven 実行で独立した settings / local repository を使い、HOME を変更しません。settings は token 値ではなく環境変数参照を含み、artifact には含めません。公開中の通信障害などで一部だけ成功した場合は状態を調査し、自動削除・版の上書きは行いません。
 
 この workflow は意図したソース版を明示する手動公開から開始します。版番号を変えない通常のソース更新を自動で release へ再公開しないためです。戻すときは有効化変数を `false` にし、この PR を revert できます。既存 Packages と個人向け workflow はそのまま利用できます。
