@@ -1,0 +1,56 @@
+[
+  {
+    "groupId": "org.unlaxer.address.ikura",
+    "artifactId": "ikura-jaddress-parent",
+    "version": "0.4.2",
+    "source": "ikura-jaddress-parser"
+  },
+  {
+    "groupId": "org.unlaxer.address.ikura",
+    "artifactId": "ikura-jaddress-parent",
+    "version": "0.4.4",
+    "source": "ikura-jaddress-parser"
+  },
+  {
+    "groupId": "org.unlaxer.address.ikura",
+    "artifactId": "ikura-jaddress-core",
+    "version": "0.4.2",
+    "source": "ikura-jaddress-parser"
+  },
+  {
+    "groupId": "org.unlaxer.address.ikura",
+    "artifactId": "ikura-jaddress-core",
+    "version": "0.4.4",
+    "source": "ikura-jaddress-parser"
+  },
+  {
+    "groupId": "org.unlaxer.address.ikura",
+    "artifactId": "ikura-jaddress-dict-data",
+    "version": "0.4.2",
+    "source": "ikura-jaddress-parser"
+  },
+  {
+    "groupId": "org.unlaxer.address.ikura",
+    "artifactId": "ikura-jaddress-dict-data",
+    "version": "0.4.4",
+    "source": "ikura-jaddress-parser"
+  },
+  {
+    "groupId": "org.unlaxer.address.ikura",
+    "artifactId": "ikura-jaddress-history",
+    "version": "0.4.4",
+    "source": "ikura-jaddress-parser"
+  },
+  {
+    "groupId": "org.unlaxer.address.ikura",
+    "artifactId": "ikura-jaddress-api",
+    "version": "0.4.4",
+    "source": "ikura-jaddress-parser"
+  },
+  {
+    "groupId": "org.unlaxer.address.ikura",
+    "artifactId": "ikura-jaddress-cli",
+    "version": "0.4.4",
+    "source": "ikura-jaddress-parser"
+  }
+]

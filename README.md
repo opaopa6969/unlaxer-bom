@@ -330,6 +330,12 @@ gh variable set CI_RUNNER_LABELS --repo opaopa6969/unlaxer-bom \
 gh workflow run mirror-to-opaopa6969.yml --repo caulis/unlaxer-bom --ref main
 ```
 
+## caulis Packages 移行の準備
+
+既存版の jar を作り直さずに移すためのスクリプトと対象座標は
+[公開済み Maven 成果物の移行準備](docs/package-migration-bundles.md) を参照。
+チェックサム付きのバンドルを生成する段階であり、公開・取得先の切り替えは別工程。
+
 ## caulis Packages 移行の権限確認
 
 `Check package migration access` は手動実行専用です。公開・削除は行わず、管理アカウントの

@@ -1,0 +1,8 @@
+[
+  {
+    "groupId": "org.unlaxer",
+    "artifactId": "glm-jaddress-parser",
+    "version": "0.1.1",
+    "source": "okaka-jaddress-parser"
+  }
+]
