@@ -1,0 +1,27 @@
+name: Check package migration access
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    if: vars.PACKAGE_MIGRATION_ENABLED == 'true'
+    runs-on: ${{ fromJSON(vars.CI_RUNNER_LABELS || '["ubuntu-latest"]') }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify managed account and read permissions
+        env:
+          GH_TOKEN: ${{ secrets.CAULIS_PACKAGES_READ_TOKEN }}
+          EXPECTED_LOGIN: ${{ vars.PACKAGES_READ_ACCOUNT || 'caulis-deployuser' }}
+          REGISTRY_OWNER: ${{ github.repository_owner }}
+        run: python3 scripts/check-package-access.py
+      - name: Upload access report
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-access-report
+          path: package-access-report.json
+          if-no-files-found: error
+          retention-days: 7
