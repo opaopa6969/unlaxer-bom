@@ -1,0 +1,61 @@
+name: Bootstrap Maven packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Private draft release containing maven-bootstrap.zip
+        required: true
+        type: string
+      bundle_sha256:
+        description: Reviewed SHA-256 of maven-bootstrap.zip
+        required: true
+        type: string
+      publish:
+        description: Publish missing coordinates after validation
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bootstrap-maven-packages
+  cancel-in-progress: false
+
+jobs:
+  bootstrap:
+    if: vars.PACKAGE_MIGRATION_ENABLED == 'true'
+    runs-on: ${{ fromJSON(vars.PUBLISH_RUNNER_LABELS || '["ubuntu-latest"]') }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: corretto
+          java-version: '25'
+      - name: Test bundle publisher
+        run: python3 -m unittest discover -s tests -p test_package_publisher.py -v
+      - name: Download and validate migration bundle
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          BUNDLE_SHA256: ${{ inputs.bundle_sha256 }}
+          PUBLISH: ${{ inputs.publish }}
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^maven-bootstrap-[0-9-]+$ ]]
+          [[ "$BUNDLE_SHA256" =~ ^[a-f0-9]{64}$ ]]
+          bundle_dir=$(mktemp -d "$RUNNER_TEMP/maven-bootstrap.XXXXXX")
+          trap 'rm -rf "$bundle_dir"' EXIT
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --pattern maven-bootstrap.zip --dir "$bundle_dir"
+          args=()
+          if [[ "$PUBLISH" == true ]]; then args+=(--publish); fi
+          python3 scripts/publish-package-bundle.py \
+            --bundle "$bundle_dir/maven-bootstrap.zip" --sha256 "$BUNDLE_SHA256" \
+            --repository "$GITHUB_REPOSITORY" "${args[@]}"

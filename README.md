@@ -354,3 +354,8 @@ gh workflow run package-access.yml --repo caulis/unlaxer-bom --ref main
 ```
 
 関連: https://github.com/caulis/vacant-dev-workspace/issues/19
+
+## 既存成果物の初回移行
+
+レビュー済みバンドルを自 repo の `GITHUB_TOKEN` で初回公開する手順は
+[既存 Maven 成果物の初回公開](docs/maven-package-bootstrap.md) を参照。
