@@ -1,0 +1,21 @@
+{
+  "source_repositories": [
+    "unlaxer-bom",
+    "ABRUtils",
+    "onigiri-parser",
+    "japanese-parser-common",
+    "building-hierarchy",
+    "municipality-history",
+    "historical-town-names",
+    "japanpost-history",
+    "kugiri",
+    "ikura-jaddress-parser",
+    "shake-jaddress-parser",
+    "okaka-jaddress-parser",
+    "kombu-jaddress-parser",
+    "ABR-Snapshot"
+  ],
+  "snapshot_repository": "ABR-Snapshot",
+  "snapshot_tag": "v1.2.0-snapshot",
+  "snapshot_assets": ["abr-inmemory-v7.meta", "abr-inmemory-v7.payload.bin"]
+}

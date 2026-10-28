@@ -329,3 +329,22 @@ gh variable set CI_RUNNER_LABELS --repo opaopa6969/unlaxer-bom \
   --body '["self-hosted","Linux","X64","unlaxer-bom-ci"]'
 gh workflow run mirror-to-opaopa6969.yml --repo caulis/unlaxer-bom --ref main
 ```
+
+## caulis Packages 移行の権限確認
+
+`Check package migration access` は手動実行専用です。公開・削除は行わず、管理アカウントの
+ソース読み取り、ABR-Snapshot の Release 資産、Maven Packages 一覧の取得を確認します。
+必要な取得元は `config/package-access.json` に記録しています。
+
+caulis 側で Repository Variable `PACKAGE_MIGRATION_ENABLED=true`、
+`PACKAGES_READ_ACCOUNT=caulis-deployuser` を設定し、org secret
+`CAULIS_PACKAGES_READ_TOKEN` をこの repo に配布してください。個人側では移行用変数を設定しません。
+Secret 未配布、想定と異なるアカウント、取得元への権限不足、Release 資産不足の場合は失敗します。
+レポートにはアカウント名と取得元・パッケージのメタデータだけを保存します。
+この確認は各 Maven 成果物の存在・内容の検証とは別で、ビルド完了を示すものではありません。
+
+```bash
+gh workflow run package-access.yml --repo caulis/unlaxer-bom --ref main
+```
+
+関連: https://github.com/caulis/vacant-dev-workspace/issues/19
