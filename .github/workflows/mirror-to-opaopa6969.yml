@@ -4,7 +4,8 @@
 # - force はしない。opaopa6969 側だけに別のコミットがある（非 fast-forward）ときは失敗して赤くなるので、
 #   手で取り込んでから再実行する（Actions の Re-run か、workflow_dispatch）。
 # - 認証は opaopa6969/unlaxer-bom の書き込み用 Deploy Key。秘密鍵は secrets.MIRROR_SSH_KEY。
-# - ブランチ削除は同期しない（消したいときは opaopa6969 側で手動）。
+# - MIRROR_REPOSITORY が設定された repo でだけ同期する。同期先では未設定にして循環を防ぐ。
+# - workflow_dispatch は選択した ref だけを同期する。ブランチ削除は同期しない。
 name: Mirror to opaopa6969
 
 on:
@@ -23,8 +24,8 @@ permissions:
 jobs:
   mirror:
     name: Push to opaopa6969/unlaxer-bom (ff only)
-    runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' || !github.event.deleted }}
+    runs-on: ${{ fromJSON(vars.AUTOMATION_RUNNER_LABELS || '["ubuntu-latest"]') }}
+    if: ${{ vars.MIRROR_REPOSITORY != '' && !github.event.deleted }}
     steps:
       - name: Checkout (full history)
         uses: actions/checkout@v4
@@ -36,7 +37,7 @@ jobs:
           MIRROR_SSH_KEY: ${{ secrets.MIRROR_SSH_KEY }}
           REF: ${{ github.ref }}
           SHA: ${{ github.sha }}
-          EVENT: ${{ github.event_name }}
+          MIRROR_REPOSITORY: ${{ vars.MIRROR_REPOSITORY }}
         run: |
           set -eu
           if [ -z "${MIRROR_SSH_KEY:-}" ]; then
@@ -46,11 +47,7 @@ jobs:
           printf '%s\n' "$MIRROR_SSH_KEY" > ~/.ssh/mirror_key && chmod 600 ~/.ssh/mirror_key
           ssh-keyscan -t ed25519,rsa github.com >> ~/.ssh/known_hosts 2>/dev/null
           export GIT_SSH_COMMAND="ssh -i ~/.ssh/mirror_key -o IdentitiesOnly=yes"
-          git remote add mirror git@github.com:opaopa6969/unlaxer-bom.git
-          if [ "$EVENT" = "workflow_dispatch" ]; then
-            # 手動: 全ブランチとタグを ff で送る
-            git push mirror 'refs/remotes/origin/*:refs/heads/*' 'refs/tags/*:refs/tags/*'
-          else
-            git push mirror "$SHA:$REF"
-          fi
-          echo "mirrored $REF ($SHA) -> opaopa6969/unlaxer-bom"
+          git remote add mirror "git@github.com:${MIRROR_REPOSITORY}.git"
+          # 手動実行も選択した ref だけを同期する。origin/HEAD や作業ブランチは送らない。
+          git push mirror "$SHA:$REF"
+          echo "mirrored $REF ($SHA) -> $MIRROR_REPOSITORY"

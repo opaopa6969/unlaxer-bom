@@ -297,3 +297,35 @@ GH_PKG_TOKEN=<write:packages トークン> mvn -s /path/to/settings.xml deploy
 ## リリース運用
 
 リリースの仕組み・設定・運用（mermaid 付き）は [docs/RELEASE.md](docs/RELEASE.md) を参照。
+
+
+## CI の環境別設定
+
+workflow は caulis / opaopa6969 で同じファイルを使います。
+実行環境の違いは Settings → Secrets and variables → Actions → Variables の
+Repository Variables で指定し、runner の変更だけのために片側の Git 履歴を分岐させないでください。
+
+| Variable | caulis/unlaxer-bom | opaopa6969/unlaxer-bom |
+|---|---|---|
+| `CI_RUNNER_LABELS` | `["ubuntu-latest"]` | `["self-hosted","Linux","X64","unlaxer-bom-ci"]` |
+| `PUBLISH_RUNNER_LABELS` | `["ubuntu-latest"]` | `["self-hosted","Linux","X64","unlaxer-bom-ci"]` |
+| `AUTOMATION_RUNNER_LABELS` | `["ubuntu-latest"]` | `["self-hosted","Linux","X64","unlaxer-bom-ci"]` |
+| `MIRROR_REPOSITORY` | `opaopa6969/unlaxer-bom` | 未設定（同期しない） |
+
+runner の値は JSON 配列です。未設定時の既定は `["ubuntu-latest"]` です。
+`runs-on` は runner 起動前に評価されるため、シェルの `${environmentName}` や
+Environment の変数ではなく、Repository / Organization Variables の `vars` を使います。
+トークンと SSH key は引き続き Secrets に保存します。
+
+通常の変更は caulis 側の PR にまとめ、個人側では設定値だけを変更します。
+既存の mirror は `MIRROR_REPOSITORY` が設定された側だけが、対象 ref を fast-forward で送ります。
+手動実行も選択した ref のみを同期し、force push はしません。
+履歴が分岐した場合は両側の履歴を通常の merge で統合した PR を caulis に入れ、
+統合後の main で workflow を実行してください。
+
+```bash
+gh variable set CI_RUNNER_LABELS --repo caulis/unlaxer-bom --body '["ubuntu-latest"]'
+gh variable set CI_RUNNER_LABELS --repo opaopa6969/unlaxer-bom \
+  --body '["self-hosted","Linux","X64","unlaxer-bom-ci"]'
+gh workflow run mirror-to-opaopa6969.yml --repo caulis/unlaxer-bom --ref main
+```
