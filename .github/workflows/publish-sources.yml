@@ -1,0 +1,103 @@
+name: Publish source packages into BOM registry
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_repo:
+        description: Source repository under the same owner
+        required: true
+        type: choice
+        options:
+          - unlaxer-bom
+          - japanese-parser-common
+          - building-hierarchy
+          - municipality-history
+          - historical-town-names
+          - japanpost-history
+          - onigiri-parser
+          - ABRUtils
+          - kugiri
+      source_commit:
+        description: Exact source commit SHA (40 lowercase hexadecimal characters)
+        required: true
+        type: string
+      dry_run:
+        description: Test and deploy to a temporary file registry only
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: source-package-publish-${{ inputs.source_repo }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ${{ fromJSON(vars.PUBLISH_RUNNER_LABELS || '["ubuntu-latest"]') }}
+    permissions:
+      contents: read
+      packages: write
+    env:
+      SOURCE_REPOSITORY: ${{ github.repository_owner }}/${{ inputs.source_repo }}
+      SOURCE_COMMIT: ${{ inputs.source_commit }}
+      MAVEN_PACKAGES_READ_USER: ${{ vars.PACKAGES_READ_ACCOUNT }}
+      MAVEN_PACKAGES_READ_TOKEN: ${{ secrets[vars.PACKAGES_READ_SECRET_NAME] }}
+      MAVEN_PACKAGES_WRITE_USER: ${{ github.actor }}
+      MAVEN_PACKAGES_WRITE_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          path: publisher
+      - name: Validate source and managed credentials before checkout
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+          PUBLISH_ENABLED: ${{ vars.LOCAL_SOURCE_PUBLISH_ENABLED }}
+        run: |
+          python3 - <<'PY'
+          import importlib.util, os
+          if os.environ['DRY_RUN'] != 'true' and os.environ['PUBLISH_ENABLED'] != 'true':
+              raise SystemExit('LOCAL_SOURCE_PUBLISH_ENABLED must be true for remote publication')
+          spec = importlib.util.spec_from_file_location('publisher', 'publisher/scripts/publish-source-packages.py')
+          publisher = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(publisher)
+          publisher.validate_inputs(os.environ['GITHUB_REPOSITORY'], os.environ['SOURCE_REPOSITORY'], os.environ['SOURCE_COMMIT'], os.environ)
+          work = os.path.join(os.environ['RUNNER_TEMP'], 'source-publish-' + os.environ['GITHUB_RUN_ID'] + '-' + os.environ['GITHUB_RUN_ATTEMPT'])
+          with open(os.environ['GITHUB_ENV'], 'a') as output:
+              output.write('PUBLISH_WORK=' + work + '\n')
+          print('Source and managed read credentials validated')
+          PY
+      - name: Checkout pinned source
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.SOURCE_REPOSITORY }}
+          ref: ${{ env.SOURCE_COMMIT }}
+          token: ${{ env.MAVEN_PACKAGES_READ_TOKEN }}
+          persist-credentials: false
+          path: source
+      - uses: actions/setup-java@v4
+        with:
+          distribution: corretto
+          java-version: '25'
+          overwrite-settings: false
+      - name: Test and publish selected modules
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          args=()
+          if [[ "$DRY_RUN" == true ]]; then args+=(--dry-run); fi
+          python3 publisher/scripts/publish-source-packages.py \
+            --repository "$GITHUB_REPOSITORY" --source-repository "$SOURCE_REPOSITORY" \
+            --source-commit "$SOURCE_COMMIT" --source-root source --work "$PUBLISH_WORK" "${args[@]}"
+      - name: Upload source provenance and staged packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-packages-${{ inputs.source_repo }}
+          path: |
+            ${{ env.PUBLISH_WORK }}/source-publish-report.json
+            ${{ env.PUBLISH_WORK }}/staging/
+          if-no-files-found: error
+          retention-days: 7

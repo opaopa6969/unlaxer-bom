@@ -1,5 +1,7 @@
 # リリースの仕組み・設定・運用
 
+> caulis 側のソースから集約公開する経路は [同一 owner のソース公開](source-package-publishing.md) を参照してください。以下は従来の個人向け運用の記録です。
+
 unlaxer 群（`unlaxer-common` / `abr-utils` / `building-hierarchy` / `onigiri-parser`）と、
 それを束ねる **unlaxer-bom（リリーストレイン）**、末端 consumer **vacant-service**、
 そして **ECR デプロイ**までの一連の流れをまとめる。

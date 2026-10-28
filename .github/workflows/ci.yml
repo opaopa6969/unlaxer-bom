@@ -29,11 +29,14 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+          overwrite-settings: false
 
       - name: Validate BOM pom
         run: mvn -B -N validate
 
       - name: Test BOM checkers
+        env:
+          SOURCE_PUBLISH_MAVEN_TEST: 'true'
         run: python3 -m unittest discover -s tests -v
 
       - name: Check consumer version drift
