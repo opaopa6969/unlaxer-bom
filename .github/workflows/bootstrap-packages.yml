@@ -29,10 +29,13 @@ jobs:
     if: vars.PACKAGE_MIGRATION_ENABLED == 'true'
     runs-on: ${{ fromJSON(vars.PUBLISH_RUNNER_LABELS || '["ubuntu-latest"]') }}
     permissions:
-      contents: read
+      # GitHub only lists draft releases for tokens with push access.
+      contents: write
       packages: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-java@v4
         with:
           distribution: corretto

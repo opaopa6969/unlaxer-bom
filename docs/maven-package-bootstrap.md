@@ -9,8 +9,11 @@
 - Repository Variable `PACKAGE_MIGRATION_ENABLED=true` の repo だけで動く。
   個人側では未設定にしておく。同じ YAML を両環境で使える。
 - runner は `PUBLISH_RUNNER_LABELS`（未設定時は `ubuntu-latest`）。
-- 認証は自 repo の `GITHUB_TOKEN`（`contents: read`, `packages: write`）だけ。
+- 認証は自 repo の `GITHUB_TOKEN`（`contents: write`, `packages: write`）だけ。
   個人 PAT と org の読み取り PAT は不要。他 repo の Packages への書き込みはしない。
+  GitHub は push 権限を持つ token にのみ draft Release を返すため、この手動ジョブには
+  `contents: write` が必要。コードは checkout するだけで、Release や Git 履歴は変更しない。
+  checkout の Git 資格情報は保存しない。
 - バンドルは `caulis/unlaxer-bom` の `scripts/prepare-package-bundle.py` で作成する。
   対象 repo を明示し、外部へ公開せず、この private repo の draft Release に
   `maven-bootstrap.zip` として保存する。Release tag は `maven-bootstrap-YYYY-MM-DD`。
