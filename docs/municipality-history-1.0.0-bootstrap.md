@@ -1,5 +1,7 @@
 # municipality-history 1.0.0 のソースからの補完
 
+> 互換性の追補: この source-build 1.0.0 は、japanpost-history に同梱されていた1.0.0と公開 API が一致しない。`MunicipalityChange.fullName()` が package-private のため、japanpost-history のビルドには使用しない。利用側は既存の1.0.2へ進める（caulis/japanpost-history#43）。以下は当時の公開・検証記録であり、その依存の互換性確認完了を意味しない。
+
 japanpost-history がビルド時の optional 依存に指定する `org.unlaxer:municipality-history:1.0.0` は、
 元の GitHub Packages と Maven Central では404だった。一方、caulis の Git 履歴にその版のソースが残っていた。
 既存の公開済み jar をコピーした初回31座標とは区別し、この1座標は当時のソースから生成した。
@@ -35,3 +37,20 @@ Maven registry からの既存 jar のコピーと区別できる。
 既存ファイルとの一致を確認して公開をスキップする。不一致や部分公開時は書き込み前に停止する。
 この操作は通常の継続公開や、別 repo に対する管理 Secret の Read 検証を代替しない。
 親 caulis/vacant-dev-workspace#19 はそれらの完了まで OPEN のままとする。
+
+## 公開 API の不一致と利用側の修正
+
+後から [japanpost-history に同梱された jar](https://github.com/caulis/japanpost-history/blob/2141149cc3d0b23d450eec705e2657683f73f15f/local-repo/municipality-history-1.0.0.jar) と照合したところ、data と他のクラスは同一だったが、`MunicipalityChange.class` に差があった。`javap -p -c` の比較では `fullName()` の公開範囲が異なり、ソース履歴にはその後の public 化 commit `250d7de` が存在する。
+
+| 比較対象 | jar SHA-256 | fullName() |
+|---|---|---|
+| japanpost-history の同梱1.0.0 | `3a0de0b2918d676561a8f0a986a5f9f0c7dfa71d1c8c5be8558f5080982b0c45` | public |
+| 今回の source-build 1.0.0 | `81fb7883478f2d5b4ba86e2e143d2113109a4105535975b9626bfa4b0bee5b45` | package-private |
+
+当時の loadBundled / findByName の probe だけでは、この差を検出できなかった。実際に japanpost-history の clean compile で source-build 1.0.0を選ぶと `fullName() is not public` で失敗することを確認した。公開 API のある既存1.0.2を選ぶと clean verify は128テスト・失敗0・skip0で成功した。
+
+既存 release 座標の削除・置換は行わない。japanpost-history の次版1.3.1は1.0.2に依存し、caulis 設定では caulis Packages から取得する。個人側 CI は公開1.0.2ソースの固定 commit をビルドする。既存の1.3.0を再公開せず、現行 vacant-service の明示 pin（1.0.2）も維持する。
+
+registry metadata の latest は1.0.2だった。1.0.0を最新として推奨したり、同梱版と同一の ABI と扱ったりしない。source-build 版の公開記録と元 bundle は履歴として保持する。
+
+今後、取得できない旧版をソースから補完する場合は、POM の version だけで source commit を決めない。既存 repo の同梱成果物・タグ・公開 API を照合し、実 consumer の clean compile / test まで検証してから公開する。

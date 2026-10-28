@@ -28,3 +28,8 @@
 
 この一覧の作成は移行完了を意味しない。caulis 側への公開、管理アカウントによる読み取り、
 各ライブラリの継続公開、vacant-service の取得先変更とクリーンビルドは親 issue の残作業。
+
+
+## municipality-history 1.0.0 の互換性注意
+
+ソースから補完した1.0.0は japanpost-history の同梱版と fullName() の公開範囲が異なります。[補完記録の追補](../../docs/municipality-history-1.0.0-bootstrap.md)を参照し、japanpost-history のビルドには既存1.0.2を使用してください。
