@@ -34,6 +34,14 @@ def configure(poms, repository, settings, environment):
         project = tree.getroot()
         if project.tag != "{" + NS + "}project":
             raise ConfigurationError("Not a Maven POM: " + str(path))
+        # The Central extension replaces Maven's deploy lifecycle, even when an
+        # alternate repository is selected. Remove it from this isolated GitHub
+        # publishing checkout, including inactive/active profile declarations.
+        for plugins in project.findall('.//{*}plugins'):
+            for plugin in list(plugins):
+                if (plugin.findtext('{*}groupId'), plugin.findtext('{*}artifactId')) == (
+                        'org.sonatype.central', 'central-publishing-maven-plugin'):
+                    plugins.remove(plugin)
         parents = {node: parent for parent in project.iter() for node in parent}
         for tag in ("repository", "pluginRepository"):
             for node in project.findall(".//{*}" + tag):

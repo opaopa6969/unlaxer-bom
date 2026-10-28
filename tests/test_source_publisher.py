@@ -13,7 +13,7 @@ spec.loader.exec_module(publisher)
 POM = '''<project xmlns="http://maven.apache.org/POM/4.0.0"><modelVersion>4.0.0</modelVersion>
 <groupId>org.unlaxer</groupId><artifactId>municipality-history</artifactId><version>99.0.0</version>
 <properties><maven.compiler.release>21</maven.compiler.release><project.build.sourceEncoding>UTF-8</project.build.sourceEncoding></properties>
-<build><plugins><plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>3.13.0</version></plugin></plugins></build>
+<build><plugins><plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>3.13.0</version></plugin><plugin><groupId>org.sonatype.central</groupId><artifactId>central-publishing-maven-plugin</artifactId><version>0.7.0</version><extensions>true</extensions></plugin></plugins></build>
 </project>'''
 ENV = {'MAVEN_PACKAGES_READ_USER': 'caulis-deployuser', 'MAVEN_PACKAGES_READ_TOKEN': 'read',
        'MAVEN_PACKAGES_WRITE_USER': 'writer', 'MAVEN_PACKAGES_WRITE_TOKEN': 'write'}
@@ -93,14 +93,26 @@ class SourcePublisherTests(unittest.TestCase):
         publisher.configuration.configure([self.pom], 'caulis/unlaxer-bom', settings, ENV)
         pom = ET.parse(self.pom)
         self.assertEqual(pom.findtext('{*}version'), '99.0.0')
+        plugins = [n.text for n in pom.findall('.//{*}plugin/{*}artifactId')]
+        self.assertNotIn('central-publishing-maven-plugin', plugins)
+        self.assertIn('maven-compiler-plugin', plugins)
         self.assertEqual(pom.findtext('{*}distributionManagement/{*}repository/{*}url'), 'https://maven.pkg.github.com/caulis/unlaxer-bom')
         self.assertIn('${env.MAVEN_PACKAGES_WRITE_TOKEN}', settings.read_text())
         self.assertEqual(settings.stat().st_mode & 0o777, 0o600)
+
+    def test_central_extension_is_removed_from_profiles_as_well(self):
+        central = '<plugin><groupId>org.sonatype.central</groupId><artifactId>central-publishing-maven-plugin</artifactId><version>0.7.0</version><extensions>true</extensions></plugin>'
+        self.pom.write_text(POM.replace('</project>', '<profiles><profile><id>central</id><activation><activeByDefault>true</activeByDefault></activation><build><plugins>' + central + '</plugins></build></profile></profiles></project>'))
+        publisher.configuration.configure([self.pom], 'caulis/unlaxer-bom', self.root/'settings.xml', ENV)
+        self.assertNotIn('central-publishing-maven-plugin', self.pom.read_text())
+        self.assertEqual(ET.parse(self.pom).findtext('{*}version'), '99.0.0')
 
     @unittest.skipUnless(os.environ.get('SOURCE_PUBLISH_MAVEN_TEST') == 'true', 'explicit Maven integration test')
     def test_real_maven_dry_run_deploys_only_into_file_registry(self):
         settings, staging = self.root/'settings.xml', self.root/'staging'
         publisher.configuration.configure([self.pom], 'caulis/unlaxer-bom', settings, ENV)
+        # Check before Maven starts so a regression cannot contact Central.
+        self.assertNotIn('central-publishing-maven-plugin', self.pom.read_text())
         publisher.build_and_publish(self.root, self.items, settings, self.root/'m2', staging, True)
         package = staging/'org/unlaxer/municipality-history/99.0.0'
         self.assertTrue((package/'municipality-history-99.0.0.jar').is_file())
