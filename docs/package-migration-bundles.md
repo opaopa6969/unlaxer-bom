@@ -4,7 +4,7 @@
 `scripts/prepare-package-bundle.py` は公開済み成果物を取得し、検証可能な ZIP と manifest を作る。
 このスクリプト自身は registry への書き込みを行わない。
 
-Python 3.11 以上、curl、元の GitHub Packages に対する読み取りトークンが必要。
+Python 3.9 以上、curl、元の GitHub Packages に対する読み取りトークンが必要。
 トークンは既存の安全な方法で `GITHUB_PACKAGES_TOKEN` 環境変数に設定する。
 コマンド引数やファイルには実値を渡さない。
 
