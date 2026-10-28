@@ -45,6 +45,8 @@ Secret が未配布なら dry-run も失敗します。実公開が無効のま�
 
 既存 release の POM / jar が揃っている座標は再公開せず、`existingReleaseSkipped` に記録します。これは選択 commit と既存 jar の同一性を保証するものではありません。同じ版を別の HEAD から再生成・上書きすることはしません。POM / jar が片方だけ存在するときや認証エラーは停止します。`-SNAPSHOT` は Maven の通常の timestamp 付き公開を行います。
 
+公開用 checkout の POM に `central-publishing-maven-plugin` があれば、profile 内を含めて取り除きます。この拡張は deploy lifecycle を置き換えるため、GitHub 向けには標準 `maven-deploy-plugin` だけを使います。変更は一時 checkout に限られ、元のソース repo の Maven Central 公開設定は維持します。
+
 各 Maven 実行で独立した settings / local repository を使い、HOME を変更しません。settings は token 値ではなく環境変数参照を含み、artifact には含めません。公開中の通信障害などで一部だけ成功した場合は状態を調査し、自動削除・版の上書きは行いません。
 
 この workflow は意図したソース版を明示する手動公開から開始します。版番号を変えない通常のソース更新を自動で release へ再公開しないためです。戻すときは有効化変数を `false` にし、この PR を revert できます。既存 Packages と個人向け workflow はそのまま利用できます。
