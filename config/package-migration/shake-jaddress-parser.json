@@ -1,0 +1,32 @@
+[
+  {
+    "groupId": "org.unlaxer.address.claude",
+    "artifactId": "claude-jaddress-parent",
+    "version": "0.3.2",
+    "source": "shake-jaddress-parser"
+  },
+  {
+    "groupId": "org.unlaxer.address.claude",
+    "artifactId": "claude-jaddress-core",
+    "version": "0.3.2",
+    "source": "shake-jaddress-parser"
+  },
+  {
+    "groupId": "org.unlaxer.address.claude",
+    "artifactId": "claude-jaddress-dict-data",
+    "version": "0.3.2",
+    "source": "shake-jaddress-parser"
+  },
+  {
+    "groupId": "org.unlaxer.address.claude",
+    "artifactId": "claude-jaddress-api",
+    "version": "0.3.2",
+    "source": "shake-jaddress-parser"
+  },
+  {
+    "groupId": "org.unlaxer.address.claude",
+    "artifactId": "claude-jaddress-cli",
+    "version": "0.3.2",
+    "source": "shake-jaddress-parser"
+  }
+]

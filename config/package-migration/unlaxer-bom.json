@@ -1,0 +1,92 @@
+[
+  {
+    "groupId": "org.unlaxer",
+    "artifactId": "unlaxer-bom",
+    "version": "2026.51",
+    "source": "unlaxer-bom"
+  },
+  {
+    "groupId": "org.unlaxer",
+    "artifactId": "unlaxer-bom",
+    "version": "2026.56",
+    "source": "unlaxer-bom"
+  },
+  {
+    "groupId": "org.unlaxer",
+    "artifactId": "onigiri-parser",
+    "version": "0.9.32",
+    "source": "unlaxer-bom"
+  },
+  {
+    "groupId": "org.unlaxer",
+    "artifactId": "building-hierarchy",
+    "version": "0.19.1",
+    "source": "unlaxer-bom"
+  },
+  {
+    "groupId": "org.unlaxer",
+    "artifactId": "building-hierarchy",
+    "version": "0.19.4",
+    "source": "unlaxer-bom"
+  },
+  {
+    "groupId": "org.unlaxer",
+    "artifactId": "japanese-parser-common",
+    "version": "0.1.0",
+    "source": "unlaxer-bom"
+  },
+  {
+    "groupId": "org.unlaxer",
+    "artifactId": "japanese-parser-common",
+    "version": "0.3.2",
+    "source": "unlaxer-bom"
+  },
+  {
+    "groupId": "org.unlaxer",
+    "artifactId": "japanese-parser-common",
+    "version": "0.3.7",
+    "source": "unlaxer-bom"
+  },
+  {
+    "groupId": "org.unlaxer",
+    "artifactId": "municipality-history",
+    "version": "1.0.1",
+    "source": "unlaxer-bom"
+  },
+  {
+    "groupId": "org.unlaxer",
+    "artifactId": "municipality-history",
+    "version": "1.0.2",
+    "source": "unlaxer-bom"
+  },
+  {
+    "groupId": "org.unlaxer",
+    "artifactId": "historical-town-names",
+    "version": "0.1.0",
+    "source": "unlaxer-bom"
+  },
+  {
+    "groupId": "org.unlaxer",
+    "artifactId": "japanpost-history",
+    "version": "1.2.0",
+    "source": "unlaxer-bom"
+  },
+  {
+    "groupId": "org.unlaxer",
+    "artifactId": "japanpost-history",
+    "version": "1.3.0",
+    "source": "unlaxer-bom"
+  },
+  {
+    "groupId": "org.unlaxer.geo",
+    "artifactId": "abr-utils",
+    "version": "0.10.13",
+    "source": "ABRUtils"
+  },
+  {
+    "groupId": "org.unlaxer",
+    "artifactId": "unlaxer-common",
+    "version": "3.0.11",
+    "source": "central"
+  }
+]

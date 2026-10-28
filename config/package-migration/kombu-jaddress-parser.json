@@ -1,0 +1,8 @@
+[
+  {
+    "groupId": "jp.jaddress",
+    "artifactId": "jaddress-parser",
+    "version": "0.1.4",
+    "source": "kombu-jaddress-parser"
+  }
+]
