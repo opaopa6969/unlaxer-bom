@@ -48,3 +48,5 @@ python3 -m unittest discover -s tests -p test_package_publisher.py -v
 
 revert は追加した PR の merge commit の revert と、必要なら
 `PACKAGE_MIGRATION_ENABLED=false`。公開済み成果物は保持し、履歴や既存版は削除しない。
+
+追加の補完履歴: [municipality-history 1.0.0 を当時のソースから生成](municipality-history-1.0.0-bootstrap.md)。
