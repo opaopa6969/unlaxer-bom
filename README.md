@@ -359,3 +359,7 @@ gh workflow run package-access.yml --repo caulis/unlaxer-bom --ref main
 
 レビュー済みバンドルを自 repo の `GITHUB_TOKEN` で初回公開する手順は
 [既存 Maven 成果物の初回公開](docs/maven-package-bootstrap.md) を参照。
+
+## 環境別の継続公開
+
+[同一 owner のソースを集約 registry へ公開する](docs/source-package-publishing.md)に、caulis の管理アカウントと GITHUB_TOKEN を使う経路を記載しています。
