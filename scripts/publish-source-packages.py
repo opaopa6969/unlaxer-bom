@@ -33,6 +33,13 @@ SOURCES = {
               ('building/pom.xml', 'org.unlaxer', 'kugiri-building')],
 }
 
+# Older japanpost sources used this bundled public-API variant of 1.0.0.
+# The registry's source-built supplement is not binary compatible with it.
+JAPANPOST_BUNDLED_DEPENDENCY = {
+    'local-repo/municipality-history-1.0.0.jar': '3a0de0b2918d676561a8f0a986a5f9f0c7dfa71d1c8c5be8558f5080982b0c45',
+    'local-repo/municipality-history-1.0.0.pom': 'ed0daf97c9d48331917e2b1aee7197f756d24a466a3bde3b9ee2f18ac95db802',
+}
+
 
 class PublishError(Exception):
     pass
@@ -123,6 +130,38 @@ def select_missing(items, repository, environment, dry_run, fetch=request):
     return selected, existing
 
 
+def install_bundled_dependency(root, name, items, settings, local_repository, run=subprocess.run):
+    if name != 'japanpost-history' or not items:
+        return []
+    pom = ET.parse(root / 'pom.xml').getroot()
+    dependencies = [dependency for dependency in pom.findall('{*}dependencies/{*}dependency')
+                    if (dependency.findtext('{*}groupId'), dependency.findtext('{*}artifactId'))
+                    == ('org.unlaxer', 'municipality-history')]
+    if not any(dependency.findtext('{*}version') == '1.0.0' for dependency in dependencies):
+        return []
+    files = []
+    for relative, expected in JAPANPOST_BUNDLED_DEPENDENCY.items():
+        path = root / relative
+        if not path.is_file() or not path.resolve().is_relative_to(root.resolve()):
+            raise PublishError('Missing or external bundled dependency: ' + relative)
+        actual = hashlib.sha256(path.read_bytes()).hexdigest()
+        if actual != expected:
+            raise PublishError('Bundled dependency checksum mismatch: ' + relative)
+        files.append({'path': relative, 'sha256': actual})
+    # A neutral project avoids activating source build extensions during install-file.
+    project = settings.parent / 'dependency-install.xml'
+    project.write_text('<project><modelVersion>4.0.0</modelVersion>'
+        '<groupId>local.bootstrap</groupId><artifactId>dependency-install</artifactId>'
+        '<version>1</version><packaging>pom</packaging></project>\n')
+    # Install only into this run's cache. Never deploy this dependency again.
+    run(['mvn', '-B', '-ntp', '-N', '-f', str(project),
+         '-s', str(settings), '-Dmaven.repo.local=' + str(local_repository),
+         'org.apache.maven.plugins:maven-install-plugin:3.1.4:install-file',
+         '-Dfile=' + str(root / 'local-repo/municipality-history-1.0.0.jar'),
+         '-DpomFile=' + str(root / 'local-repo/municipality-history-1.0.0.pom')], check=True)
+    return files
+
+
 def build_and_publish(root, items, settings, local_repository, staging, dry_run, run=subprocess.run):
     base = ['mvn', '-B', '-ntp', '-N', '-s', str(settings),
             '-Dmaven.repo.local=' + str(local_repository), '-Dgpg.skip=true']
@@ -172,11 +211,13 @@ def main():
         selected, existing = select_missing(items, args.repository, os.environ, args.dry_run)
         settings, staging = work / 'settings.xml', work / 'staging'
         configuration.configure([root / item['pom'] for item in items], args.repository, settings, os.environ)
+        bundled = install_bundled_dependency(root, name, selected, settings, work / 'repository')
         staging.mkdir()
         build_and_publish(root, selected, settings, work / 'repository', staging, args.dry_run)
         report = {'sourceRepository': args.source_repository, 'sourceCommit': actual,
                   'targetRepository': args.repository, 'dryRun': args.dry_run,
                   'built': selected, 'existingReleaseSkipped': existing,
+                  'bundledDependencies': bundled,
                   'stagedFiles': staged_files(staging)}
         (work / 'source-publish-report.json').write_text(json.dumps(report, indent=2) + '\n')
         print('Source publication complete: built=' + str(len(selected)) + ', existing=' + str(len(existing)))

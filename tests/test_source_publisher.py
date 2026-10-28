@@ -1,9 +1,11 @@
 import importlib.util
+import hashlib
 import os
 from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 import xml.etree.ElementTree as ET
 
 spec = importlib.util.spec_from_file_location('publisher', Path(__file__).resolve().parents[1] / 'scripts/publish-source-packages.py')
@@ -99,6 +101,56 @@ class SourcePublisherTests(unittest.TestCase):
         self.assertEqual(pom.findtext('{*}distributionManagement/{*}repository/{*}url'), 'https://maven.pkg.github.com/caulis/unlaxer-bom')
         self.assertIn('${env.MAVEN_PACKAGES_WRITE_TOKEN}', settings.read_text())
         self.assertEqual(settings.stat().st_mode & 0o777, 0o600)
+
+    def bundled_fixture(self):
+        self.pom.write_text(POM.replace('</project>', '<dependencies><dependency>'
+            '<groupId>org.unlaxer</groupId><artifactId>municipality-history</artifactId>'
+            '<version>1.0.0</version></dependency></dependencies></project>'))
+        checksums = {}
+        for relative in publisher.JAPANPOST_BUNDLED_DEPENDENCY:
+            path = self.root / relative
+            path.parent.mkdir(exist_ok=True)
+            path.write_bytes(relative.encode())
+            checksums[relative] = hashlib.sha256(path.read_bytes()).hexdigest()
+        return checksums
+
+    def test_bundled_legacy_dependency_is_installed_only_in_isolated_cache(self):
+        checksums = self.bundled_fixture()
+        calls = []
+        with patch.object(publisher, 'JAPANPOST_BUNDLED_DEPENDENCY', checksums):
+            files = publisher.install_bundled_dependency(self.root, 'japanpost-history', self.items,
+                self.root/'settings.xml', self.root/'isolated', lambda command, **kwargs: calls.append(command))
+        self.assertEqual({file['path']: file['sha256'] for file in files}, checksums)
+        self.assertEqual(len(calls), 1)
+        self.assertIn('-Dmaven.repo.local=' + str(self.root/'isolated'), calls[0])
+        self.assertIn('org.apache.maven.plugins:maven-install-plugin:3.1.4:install-file', calls[0])
+        self.assertNotIn('deploy', ' '.join(calls[0]))
+        self.assertNotIn('central-publishing', (self.root/'dependency-install.xml').read_text())
+
+    def test_bundled_dependency_is_not_used_for_current_version_or_skipped_release(self):
+        self.bundled_fixture()
+        def no_run(*args, **kwargs):self.fail('unexpected dependency installation')
+        for name, items in [('japanpost-history', []), ('municipality-history', self.items)]:
+            self.assertEqual(publisher.install_bundled_dependency(self.root, name, items,
+                self.root/'settings.xml', self.root/'isolated', no_run), [])
+        self.pom.write_text(self.pom.read_text().replace('<version>1.0.0</version>', '<version>1.0.2</version>'))
+        self.assertEqual(publisher.install_bundled_dependency(self.root, 'japanpost-history', self.items,
+            self.root/'settings.xml', self.root/'isolated', no_run), [])
+
+    def test_missing_changed_or_external_bundle_fails_before_maven(self):
+        checksums = self.bundled_fixture()
+        jar = self.root/'local-repo/municipality-history-1.0.0.jar'
+        original = jar.read_bytes()
+        for kind in ['changed', 'missing', 'external']:
+            if jar.exists() or jar.is_symlink():jar.unlink()
+            if kind == 'changed':jar.write_bytes(b'wrong binary')
+            if kind == 'external':jar.symlink_to('/dev/null')
+            with patch.object(publisher, 'JAPANPOST_BUNDLED_DEPENDENCY', checksums):
+                with self.assertRaises(publisher.PublishError):
+                    publisher.install_bundled_dependency(self.root, 'japanpost-history', self.items,
+                        self.root/'settings.xml', self.root/'isolated', lambda *a, **k: self.fail('Maven before validation'))
+        jar.unlink()
+        jar.write_bytes(original)
 
     def test_central_extension_is_removed_from_profiles_as_well(self):
         central = '<plugin><groupId>org.sonatype.central</groupId><artifactId>central-publishing-maven-plugin</artifactId><version>0.7.0</version><extensions>true</extensions></plugin>'
