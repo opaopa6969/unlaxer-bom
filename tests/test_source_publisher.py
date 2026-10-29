@@ -1,11 +1,13 @@
 import importlib.util
 import hashlib
+import io
 import os
 from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
+import urllib.error
 import xml.etree.ElementTree as ET
 
 spec = importlib.util.spec_from_file_location('publisher', Path(__file__).resolve().parents[1] / 'scripts/publish-source-packages.py')
@@ -29,6 +31,40 @@ class SourcePublisherTests(unittest.TestCase):
         self.pom = self.root / 'pom.xml'
         self.pom.write_text(POM)
         self.items = publisher.projects(self.root, 'municipality-history')
+
+    def test_registry_presence_uses_head_without_reading_or_redirecting(self):
+        opener = MagicMock()
+        response = opener.open.return_value.__enter__.return_value
+        response.read.side_effect = AssertionError('Presence must not download the artifact')
+        with patch.object(publisher.urllib.request, 'build_opener', return_value=opener) as build:
+            self.assertTrue(publisher.request('https://maven.pkg.github.com/caulis/unlaxer-bom/file.jar',
+                                              'read-token', 'caulis-deployuser', presence=True))
+        request = opener.open.call_args.args[0]
+        self.assertEqual(request.get_method(), 'HEAD')
+        self.assertIs(build.call_args.args[0], publisher.NoRedirect)
+        self.assertIn('Authorization', request.unredirected_hdrs)
+        self.assertNotIn('Authorization', request.headers)
+        response.read.assert_not_called()
+
+    def test_identity_request_still_reads_json_with_get(self):
+        opener = MagicMock()
+        opener.open.return_value = io.BytesIO(b'{"login":"caulis-deployuser"}')
+        with patch.object(publisher.urllib.request, 'build_opener', return_value=opener):
+            result = publisher.request('https://api.github.com/user', 'read-token')
+        self.assertEqual(result['login'], 'caulis-deployuser')
+        self.assertEqual(opener.open.call_args.args[0].get_method(), 'GET')
+
+    def test_head_treats_only_404_as_absent_and_rejects_auth_errors_and_redirects(self):
+        for status in [404, 401, 403, 302]:
+            opener = MagicMock()
+            opener.open.side_effect = urllib.error.HTTPError('https://maven.pkg.github.com/file', status,
+                                                             'test response', {}, None)
+            with patch.object(publisher.urllib.request, 'build_opener', return_value=opener):
+                if status == 404:
+                    self.assertFalse(publisher.request('https://maven.pkg.github.com/file', 'token', 'reader', presence=True))
+                else:
+                    with self.assertRaises(publisher.PublishError):
+                        publisher.request('https://maven.pkg.github.com/file', 'token', 'reader', presence=True)
 
     def test_same_owner_pinned_source_and_managed_identity(self):
         name = publisher.validate_inputs('caulis/unlaxer-bom', 'caulis/municipality-history', 'a' * 40, ENV,
