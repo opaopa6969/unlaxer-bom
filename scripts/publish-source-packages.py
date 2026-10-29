@@ -53,7 +53,10 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 def request(url, token, user=None, presence=False):
     auth = ('Basic ' + base64.b64encode((user + ':' + token).encode()).decode()
             if user else 'Bearer ' + token)
-    req = urllib.request.Request(url, headers={'User-Agent': 'unlaxer-source-publisher'})
+    # Maven GET redirects existing files to signed storage URLs. HEAD establishes
+    # presence without downloading bytes or following that authenticated redirect.
+    req = urllib.request.Request(url, headers={'User-Agent': 'unlaxer-source-publisher'},
+                                 method='HEAD' if presence else 'GET')
     req.add_unredirected_header('Authorization', auth)
     try:
         with urllib.request.build_opener(NoRedirect).open(req, timeout=30) as response:
