@@ -23,7 +23,7 @@ vacant 製品群の **共通 BOM（検証済みバージョンセット / Bill o
     <dependency>
       <groupId>org.unlaxer</groupId>
       <artifactId>unlaxer-bom</artifactId>
-      <version>2026.53</version>
+      <version>2026.57</version>
       <type>pom</type>
       <scope>import</scope>
     </dependency>
@@ -86,7 +86,7 @@ GH_PKG_TOKEN=<read:packages トークン> mvn compile
 
 | | 要件 | 根拠 |
 |---|------|------|
-| Java | **21 以上** | `pom.xml` の `<java.baseline>`。`unlaxer-common:3.0.11` の class file version が 65（= Java 21）。doma / flyway は 17 だが、トレイン全体の下限は 21 |
+| Java | **25 以上**（2026.57 から。2026.56 までは 21 以上） | `pom.xml` の `<java.baseline>`。unlaxer-common 以外の unlaxer artifact は `maven.compiler.release=25`（class file version 69）。unlaxer-common 3.0.11 は 65、doma / flyway は 17 だが、トレイン全体の下限は 25 |
 | Maven | 3.9 系で検証（BOM の import scope 自体は 3.x 全般で動く） | CI と開発環境 |
 
 Java 21 未満だとどうなるかは、**どこで compile したか**で変わる（いずれも実測）。
@@ -99,18 +99,18 @@ Java 21 未満だとどうなるかは、**どこで compile したか**で変�
 危ないのは後者（build machine と実行環境が違う場合）。この下限は宣言値を信じるのではなく、
 解決した jar の bytecode を実測して検証している（下記スクリプト）。
 
-## 現在のトレイン: `2026.53`
+## 現在のトレイン: `2026.57`
 
 | artifact | groupId | version | 備考 |
 |----------|---------|---------|------|
 | unlaxer-common | `org.unlaxer` | 3.0.11 | 全リポ共通基盤。**トレイン内で厳密統一を強制**する唯一の artifact |
-| japanese-parser-common | `org.unlaxer` | 0.3.6 | 日本語住所テキスト処理共通（文字種/CodePoint モデル・正規化・tokenizer・translator 核）。onigiri / abr-utils が共有 |
-| building-hierarchy | `org.unlaxer` | 0.19.4 | 住所→建物階層パーサー |
-| abr-utils | `org.unlaxer.geo` | 0.10.12 | ABRUtils（住所検索本体・作法の基準） |
-| onigiri-parser | `org.unlaxer` | 0.9.30 | onigiri 住所パーサー |
-| historical-town-names | `org.unlaxer` | 0.1.0 | 歴史地名辞書（町名照合失敗時の字消費 fallback。onigiri 0.9.11 が利用） |
-| municipality-history | `org.unlaxer` | 1.0.2 | 自治体統廃合履歴（historical-town-names の依存） |
-| japanpost-history | `org.unlaxer` | 1.3.0 | 時系列郵便番号辞書（municipality-history 連携・PostcodeWithContext が利用。1.2.0 で差分方式、1.3.0 で diff 39 倍高速化） |
+| japanese-parser-common | `org.unlaxer` | 0.4.0 | 日本語住所テキスト処理共通（文字種/CodePoint モデル・正規化・tokenizer・translator 核）。onigiri / abr-utils が共有 |
+| building-hierarchy | `org.unlaxer` | 0.20.0 | 住所→建物階層パーサー |
+| abr-utils | `org.unlaxer.geo` | 0.11.0 | ABRUtils（住所検索本体・作法の基準） |
+| onigiri-parser | `org.unlaxer` | 0.10.0 | onigiri 住所パーサー |
+| historical-town-names | `org.unlaxer` | 0.2.0 | 歴史地名辞書（町名照合失敗時の字消費 fallback。onigiri 0.9.11 が利用） |
+| municipality-history | `org.unlaxer` | 1.1.0 | 自治体統廃合履歴（historical-town-names の依存） |
+| japanpost-history | `org.unlaxer` | 1.4.0 | 時系列郵便番号辞書（municipality-history 連携・PostcodeWithContext が利用。1.2.0 で差分方式、1.3.0 で diff 39 倍高速化） |
 | doma-core / doma-processor | `org.seasar.doma` | 3.6.0 | 検証済み 3rdパーティ（SQL/DAO） |
 | flyway-core / flyway-database-postgresql | `org.flywaydb` | 12.1.0 | 検証済み 3rdパーティ（schema migration） |
 | _jaddress-rdb-api_ | `org.unlaxer` | _（Phase 0 で枠予約済み・Phase 1 で新設予定）_ | rdb port（DAO interface + 永続 domain 型） |

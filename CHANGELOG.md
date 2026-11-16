@@ -6,6 +6,24 @@
 
 > 各トレインごとの履歴ファイル（新しい順）は [history/INDEX.md](history/INDEX.md) を参照。
 
+## [2026.57] - 2026-11-16
+
+> 変更: **Java 25 トレイン**。unlaxer-common と 3rd パーティ以外の全 artifact を `maven.compiler.release=25` の版に上げ、
+> `java.baseline` を 21 → **25** にした（Java 25 移行の第 2 段階、caulis/vacant-dev-workspace#27）。
+> **このトレインから Java 25 以上が必要**。Java 21 で使う consumer は 2026.56 のままにする。
+>
+> - `org.unlaxer:japanese-parser-common` 0.3.7 → **0.4.0**（caulis/japanese-parser-common#25）
+> - `org.unlaxer:building-hierarchy` 0.19.4 → **0.20.0**（caulis/building-hierarchy#877）
+> - `org.unlaxer.geo:abr-utils` 0.10.13 → **0.11.0**（caulis/ABRUtils#446。caulis Packages の 0.10.14 と同じコード）
+> - `org.unlaxer:onigiri-parser` 0.9.32 → **0.10.0**（caulis/onigiri-parser#773）
+> - `org.unlaxer:historical-town-names` 0.1.0 → **0.2.0**（caulis/historical-town-names#5）
+> - `org.unlaxer:municipality-history` 1.0.2 → **1.1.0**（caulis/municipality-history#51）
+> - `org.unlaxer:japanpost-history` 1.3.0 → **1.4.0**（caulis/japanpost-history#49）
+> - unlaxer-common 3.0.11（class file 65）、doma 3.6.0、flyway 12.1.0 は据え置き。いずれも下限 25 を超えない。
+> - 各 artifact はコードを変えず、release 25 にして依存をこのトレインの版にそろえただけ。
+>   いずれも caulis 側で Corretto 25 の CI を通し、unlaxer-bom の Publish source packages で caulis Packages に publish した。
+> - BOM 自身のバージョンは 2026.56 → 2026.57。
+
 ## [2026.56] - 2026-09-15
 
 > 変更: **onigiri-parser 0.9.31 → 0.9.32、abr-utils 0.10.12 → 0.10.13**（他は 2026.55 のまま）。
