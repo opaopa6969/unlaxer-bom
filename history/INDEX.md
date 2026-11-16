@@ -6,6 +6,7 @@ unlaxer-bom のリリーストレイン一覧（新しい順）。各トレイ�
 
 | トレイン | 日付 | 変更サマリ | 詳細 |
 |----------|------|------------|------|
+| `2026.58` | 2026-11-16 | **Snyk の critical / high への対応**。japanese-parser-common 0.4.1、building-hierarchy 0.20.1、abr-utils 0.11.1、onigiri-parser 0.10.1、historical-town-names 0.2.1。tools.jackson 3.1.8 を新たに管理（caulis/vacant-dev-workspace#29） | [2026-58.md](2026-58.md) |
 | `2026.57` | 2026-11-16 | **Java 25 トレイン**。全 unlaxer artifact（unlaxer-common を除く）を release 25 版に上げ、`java.baseline` を 25 にした（caulis/vacant-dev-workspace#27） | [2026-57.md](2026-57.md) |
 | `2026.56` | 2026-09-15 | **onigiri-parser 0.9.31 → 0.9.32、abr-utils 0.10.12 → 0.10.13**（他は 2026.55 のまま）。vacant-service#200 の部屋先行パターン修正と ABRUtils#79 の codec 修正 | [2026-56.md](2026-56.md) |
 | `2026.53` | 2026-08-24 | **japanpost-history 1.2.1 → 1.3.0**（他は 2026.52 のまま）。diff p50 1,615ms → 41ms（39 倍高速化）。 | [2026.53](./2026-53.md) |
