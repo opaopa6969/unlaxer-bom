@@ -9,7 +9,7 @@
     <!-- リリーストレイン番号（CalVer YYYY.MM）。各 artifact は独立 SemVer のまま。
          このトレインに含まれる「検証済みの組み合わせ」を dependencyManagement で固定する。
          履歴と検証エビデンスは CHANGELOG.md（現在値はこの pom、過去と根拠は doc の二層）。 -->
-    <version>2026.56</version>
+    <version>2026.57</version>
     <packaging>pom</packaging>
 
     <name>unlaxer-bom</name>
@@ -25,18 +25,19 @@
              scripts/verify-bom-consumer-contract.py が、解決した jar の class file version が
              この下限を超えていないかを実測で検証する。compile は通るのに実行時だけ
              UnsupportedClassVersionError で落ちる型は、compile 検証では捕まらないため。 -->
-        <java.baseline>21</java.baseline>
+        <!-- 2026.57 で 25 に上げた（Java 25 移行の第 2 段階、caulis/vacant-dev-workspace#27）。 -->
+        <java.baseline>25</java.baseline>
         <!-- このトレインの構成バージョン。CHANGELOG.md の同名トレインと一致させること。 -->
         <unlaxer-common.version>3.0.11</unlaxer-common.version>
-        <japanese-parser-common.version>0.3.7</japanese-parser-common.version>
-        <building-hierarchy.version>0.19.4</building-hierarchy.version>
-        <abr-utils.version>0.10.13</abr-utils.version>
-        <onigiri-parser.version>0.9.32</onigiri-parser.version>
+        <japanese-parser-common.version>0.4.0</japanese-parser-common.version>
+        <building-hierarchy.version>0.20.0</building-hierarchy.version>
+        <abr-utils.version>0.11.0</abr-utils.version>
+        <onigiri-parser.version>0.10.0</onigiri-parser.version>
         <!-- 歴史地名辞書(町名照合失敗時の字消費 fallback)とその依存(自治体統廃合履歴)。onigiri 0.9.11 が利用。 -->
-        <historical-town-names.version>0.1.0</historical-town-names.version>
-        <municipality-history.version>1.0.2</municipality-history.version>
+        <historical-town-names.version>0.2.0</historical-town-names.version>
+        <municipality-history.version>1.1.0</municipality-history.version>
         <!-- 時系列郵便番号辞書(municipality-history 連携・PostcodeWithContext が利用)。 -->
-        <japanpost-history.version>1.3.0</japanpost-history.version>
+        <japanpost-history.version>1.4.0</japanpost-history.version>
         <!-- 検証済み 3rdパーティ。各 rdb 実装 / consumer が BOM 経由で揃える（drift 防止）。 -->
         <doma.version>3.6.0</doma.version>
         <flyway.version>12.1.0</flyway.version>
