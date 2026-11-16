@@ -6,6 +6,20 @@
 
 > 各トレインごとの履歴ファイル（新しい順）は [history/INDEX.md](history/INDEX.md) を参照。
 
+## [2026.58] - 2026-11-16
+
+> 変更: **Snyk の critical / high への対応**（caulis/vacant-dev-workspace#29）。各 artifact はコードを変えず、依存だけを修正版に上げた。
+>
+> - `org.unlaxer:japanese-parser-common` 0.4.0 → **0.4.1**（commons-lang3 3.17.0 → 3.22.0。caulis/japanese-parser-common#26）
+> - `org.unlaxer:building-hierarchy` 0.20.0 → **0.20.1**（jackson 2.18.12、tools.jackson 3.1.8、PostgreSQL JDBC 42.7.14。caulis/building-hierarchy#878）
+> - `org.unlaxer.geo:abr-utils` 0.11.0 → **0.11.1**（jackson 2.18.12、PostgreSQL JDBC 42.7.14。caulis/ABRUtils#447）
+> - `org.unlaxer:onigiri-parser` 0.10.0 → **0.10.1**（jackson 2.18.12、tools.jackson 3.1.8、PostgreSQL JDBC 42.7.14、commons-lang3 3.22.0。caulis/onigiri-parser#774）
+> - `org.unlaxer:historical-town-names` 0.2.0 → **0.2.1**（japanese-parser-common 0.4.1。caulis/historical-town-names#6）
+> - **新規**: `tools.jackson.core:jackson-core` / `jackson-databind` を **3.1.8** で管理する。flyway 12.1.0 が持ち込む 3.1.0 に
+>   critical 3 件・high 4 件があるため。flyway は 12.1.0 のまま（最新の 13.12.2 でも tools.jackson は 3.1.8）。
+> - municipality-history、japanpost-history、unlaxer-common、doma、flyway は据え置き。
+> - BOM 自身のバージョンは 2026.57 → 2026.58。
+
 ## [2026.57] - 2026-11-16
 
 > 変更: **Java 25 トレイン**。unlaxer-common と 3rd パーティ以外の全 artifact を `maven.compiler.release=25` の版に上げ、
